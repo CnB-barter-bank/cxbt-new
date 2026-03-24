@@ -255,16 +255,8 @@ contract ERC20Facet is IERC20Facet {
             s._unlockedBalance[from] = fromUnlocked - amount;
         } else {
             // Если отправитель в белом списке, списываем из unlockedBalance если есть, иначе из общего баланса
-            uint256 fromUnlocked = s._unlockedBalance[from];
             uint256 fromBalance = s._balances[from];
             require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
-            
-            if (fromUnlocked >= amount) {
-                s._unlockedBalance[from] = fromUnlocked - amount;
-            } else {
-                // Списываем все разблокированные и часть заблокированных
-                s._unlockedBalance[from] = 0;
-            }
         }
         
         // Обновляем общий баланс
