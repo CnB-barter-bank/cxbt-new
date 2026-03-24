@@ -5,6 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IERC20Facet.sol";
 import "../libraries/LibDiamond.sol";
 
+// CXBT Storage position для доступа к whitelist/blacklist
+bytes32 constant CXBT_STORAGE_POSITION = keccak256("cxbt.facet.storage");
+
+/**
+ * @dev Тип storage для доступа к whitelist/blacklist из CXBTFacet
+ * Используем uint256 для доступа к storage по смещению
+ */
+uint256 constant WHITELIST_SLOT_OFFSET = 4; // Смещение whitelist в CXBTStorage (после paidToken, unlockPercentage, rewardPoolBalance, paused)
+uint256 constant BLACKLIST_SLOT_OFFSET = 5; // Смещение blacklist в CXBTStorage
+
 /**
  * @title ERC20Facet
  * @dev Facet для стандартных функций ERC20 токена
@@ -50,6 +60,40 @@ contract ERC20Facet is IERC20Facet {
     modifier onlyOwner() {
         LibDiamond.enforceIsContractOwner();
         _;
+    }
+
+    /**
+     * @dev Проверяет, находится ли адрес в белом списке
+     * @param account Адрес для проверки
+     * @return true если адрес в белом списке
+     */
+    function _isWhitelisted(address account) internal view returns (bool) {
+        // Используем staticcall для вызова функции isWhitelisted из CXBTFacet
+        // Функция возвращает bool, поэтому декодируем результат
+        (bool success, bytes memory data) = address(this).staticcall(
+            abi.encodeWithSignature("isWhitelisted(address)", account)
+        );
+        if (!success || data.length == 0) {
+            return false;
+        }
+        return abi.decode(data, (bool));
+    }
+
+    /**
+     * @dev Проверяет, находится ли адрес в черном списке
+     * @param account Адрес для проверки
+     * @return true если адрес в черном списке
+     */
+    function _isBlacklisted(address account) internal view returns (bool) {
+        // Используем staticcall для вызова функции isBlacklisted из CXBTFacet
+        // Функция возвращает bool, поэтому декодируем результат
+        (bool success, bytes memory data) = address(this).staticcall(
+            abi.encodeWithSignature("isBlacklisted(address)", account)
+        );
+        if (!success || data.length == 0) {
+            return false;
+        }
+        return abi.decode(data, (bool));
     }
 
     /**
@@ -196,20 +240,42 @@ contract ERC20Facet is IERC20Facet {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         
+        // Проверяем черный список
+        require(!_isBlacklisted(from), "ERC20: sender is blacklisted");
+        require(!_isBlacklisted(to), "ERC20: recipient is blacklisted");
+        
         ERC20Storage storage s = ds();
         
-        // Проверяем unlockedBalance отправителя (можно перевести только разблокированные токены)
-        uint256 fromUnlocked = s._unlockedBalance[from];
-        require(fromUnlocked >= amount, "ERC20: transfer amount exceeds unlocked balance");
-        
-        // Списываем из unlockedBalance у отправителя
-        s._unlockedBalance[from] = fromUnlocked - amount;
+        // Если отправитель в белом списке, он может переводить любые токены
+        // Иначе проверяем unlockedBalance отправителя (можно перевести только разблокированные токены)
+        bool fromWhitelisted = _isWhitelisted(from);
+        if (!fromWhitelisted) {
+            uint256 fromUnlocked = s._unlockedBalance[from];
+            require(fromUnlocked >= amount, "ERC20: transfer amount exceeds unlocked balance");
+            s._unlockedBalance[from] = fromUnlocked - amount;
+        } else {
+            // Если отправитель в белом списке, списываем из unlockedBalance если есть, иначе из общего баланса
+            uint256 fromUnlocked = s._unlockedBalance[from];
+            uint256 fromBalance = s._balances[from];
+            require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+            
+            if (fromUnlocked >= amount) {
+                s._unlockedBalance[from] = fromUnlocked - amount;
+            } else {
+                // Списываем все разблокированные и часть заблокированных
+                s._unlockedBalance[from] = 0;
+            }
+        }
         
         // Обновляем общий баланс
         s._balances[from] -= amount;
         s._balances[to] += amount;
         
-        // Получатель получает токены в общем балансе, но НЕ в unlockedBalance (заблокированы)
+        // Если получатель в белом списке, он получает токены как разблокированные
+        if (_isWhitelisted(to)) {
+            s._unlockedBalance[to] += amount;
+        }
+        // Иначе получатель получает токены в общем балансе, но НЕ в unlockedBalance (заблокированы)
         // unlockedBalance[to] остаётся без изменений
         
         emit Transfer(from, to, amount);
@@ -225,8 +291,12 @@ contract ERC20Facet is IERC20Facet {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
         
-        // Проверяем, что пользователь не одобряет больше токенов, чем у него разблокировано
-        require(amount <= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance");
+        // Если владелец в белом списке, он может одобрить любые токены
+        // Иначе проверяем, что пользователь не одобряет больше токенов, чем у него разблокировано
+        bool ownerWhitelisted = _isWhitelisted(owner);
+        if (!ownerWhitelisted) {
+            require(amount <= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance");
+        }
         
         ds()._allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -257,7 +327,12 @@ contract ERC20Facet is IERC20Facet {
     function increaseAllowance(address spender, uint256 addedValue) external whenNotPaused returns (bool) {
         address owner = msg.sender;
         uint256 newAllowance = ds()._allowances[owner][spender] + addedValue;
-        require(newAllowance <= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance");
+        
+        // Если владелец не в белом списке, проверяем лимит
+        if (!_isWhitelisted(owner)) {
+            require(newAllowance <= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance");
+        }
+        
         _approve(owner, spender, newAllowance);
         return true;
     }

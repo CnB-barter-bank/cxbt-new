@@ -7,6 +7,36 @@ pragma solidity ^0.8.20;
  */
 interface ICXBTFacet {
     /**
+     * @dev Инициализация CXBT facet
+     * @param _paidToken Адрес контракта PAID токена
+     * @param _unlockPercentage Процент разблокировки в базисных пунктах (макс 2000 = 20%)
+     */
+    function initCXBT(address _paidToken, uint256 _unlockPercentage) external;
+
+    /**
+     * @dev Возвращает адрес PAID токена
+     * @return Адрес контракта PAID токена
+     */
+    function getPaidToken() external view returns (address);
+
+    /**
+     * @dev Возвращает процент разблокировки
+     * @return Процент разблокировки в базисных пунктах
+     */
+    function getUnlockPercentage() external view returns (uint256);
+
+    /**
+     * @dev Возвращает баланс пула наград
+     * @return Баланс пула наград
+     */
+    function getRewardPoolBalance() external view returns (uint256);
+
+    /**
+     * @dev Возвращает статус паузы
+     * @return true если контракт приостановлен
+     */
+    function paused() external view returns (bool);
+    /**
      * @dev Возвращает разблокированные, заблокированные и общее количество токенов пользователя
      * @param user Адрес пользователя
      * @return unlocked Количество разблокированных токенов
@@ -81,6 +111,48 @@ interface ICXBTFacet {
      */
     function burn(uint256 amount) external;
 
+    // ==================== Whitelist / Blacklist Functions ====================
+
+    /**
+     * @dev Добавляет адрес в белый список
+     * @param account Адрес для добавления
+     * @notice Адреса в белом списке могут игнорировать блокировку токенов
+     */
+    function addToWhitelist(address account) external;
+
+    /**
+     * @dev Удаляет адрес из белого списка
+     * @param account Адрес для удаления
+     */
+    function removeFromWhitelist(address account) external;
+
+    /**
+     * @dev Добавляет адрес в черный список
+     * @param account Адрес для добавления
+     * @notice Адреса в черном списке не могут ни отправлять, ни получать токены
+     */
+    function addToBlacklist(address account) external;
+
+    /**
+     * @dev Удаляет адрес из черного списка
+     * @param account Адрес для удаления
+     */
+    function removeFromBlacklist(address account) external;
+
+    /**
+     * @dev Проверяет, находится ли адрес в белом списке
+     * @param account Адрес для проверки
+     * @return true если адрес в белом списке
+     */
+    function isWhitelisted(address account) external view returns (bool);
+
+    /**
+     * @dev Проверяет, находится ли адрес в черном списке
+     * @param account Адрес для проверки
+     * @return true если адрес в черном списке
+     */
+    function isBlacklisted(address account) external view returns (bool);
+ 
     // Events
     event TokensUnlocked(address indexed user, uint256 amount, uint256 paidPaid);
     event RewardPoolAdded(uint256 amount);

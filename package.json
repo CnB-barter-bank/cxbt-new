@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy": "hardhat run scripts/deploy.js"
@@ -18,7 +19,8 @@
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.0"
+    "hardhat": "^2.22.0",
+    "solidity-coverage": "^0.8.17"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",

@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/facets/ERC20Facet.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/facets/</a> ERC20Facet.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">78.57% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>55/70</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">46.67% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>28/60</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">81.82% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>18/22</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">79.31% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>69/87</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">117×</span>
+<span class="cline-any cline-yes">117×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">88×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+&nbsp;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../interfaces/IERC20Facet.sol";
+import "../libraries/LibDiamond.sol";
+&nbsp;
+// CXBT Storage position для доступа к whitelist/blacklist
+bytes32 constant CXBT_STORAGE_POSITION = keccak256("cxbt.facet.storage");
+&nbsp;
+/**
+ * @dev Тип storage для доступа к whitelist/blacklist из CXBTFacet
+ * Используем uint256 для доступа к storage по смещению
+ */
+uint256 constant WHITELIST_SLOT_OFFSET = 4; // Смещение whitelist в CXBTStorage (после paidToken, unlockPercentage, rewardPoolBalance, paused)
+uint256 constant BLACKLIST_SLOT_OFFSET = 5; // Смещение blacklist в CXBTStorage
+&nbsp;
+/**
+ * @title ERC20Facet
+ * @dev Facet для стандартных функций ERC20 токена
+ */
+contract ERC20Facet is IERC20Facet {
+    bytes32 constant ERC20_STORAGE_POSITION = keccak256("erc20.facet.storage");
+&nbsp;
+    /**
+     * @dev Структура для хранения состояния ERC20 facet
+     */
+    struct ERC20Storage {
+        string _name;
+        string _symbol;
+        uint8 _decimals;
+        uint256 _totalSupply;
+        mapping(address =&gt; uint256) _balances;
+        mapping(address =&gt; uint256) _unlockedBalance;
+        mapping(address =&gt; mapping(address =&gt; uint256)) _allowances;
+    }
+&nbsp;
+    /**
+     * @dev Доступ к storage ERC20 facet
+     */
+    function ds() internal pure returns (ERC20Storage storage s) {
+        bytes32 position = ERC20_STORAGE_POSITION;
+        assembly {
+            s.slot := position
+        }
+    }
+&nbsp;
+    // Модификатор для проверки паузы
+    modifier whenNotPaused() {
+        // Проверяем статус паузы через CXBTFacet
+        (bool success, bytes memory data) = address(this).staticcall(
+            abi.encodeWithSignature("paused()")
+        );
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(success &amp;&amp; data.length &gt; 0, "Failed to check pause status");
+        bool paused = abi.decode(data, (bool));
+        require(!paused, "Pausable: paused");
+        _;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    modifier onlyOwner() {</span>
+<span class="cstat-no" title="statement not covered" >        LibDiamond.enforceIsContractOwner()</span>;
+        _;
+    }
+&nbsp;
+    /**
+     * @dev Проверяет, находится ли адрес в белом списке
+     * @param account Адрес для проверки
+     * @return true если адрес в белом списке
+     */
+    function _isWhitelisted(address account) internal view returns (bool) {
+        // Используем staticcall для вызова функции isWhitelisted из CXBTFacet
+        // Функция возвращает bool, поэтому декодируем результат
+        (bool success, bytes memory data) = address(this).staticcall(
+            abi.encodeWithSignature("isWhitelisted(address)", account)
+        );
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!success || data.length == 0) {
+<span class="cstat-no" title="statement not covered" >            return false;</span>
+        }
+        return abi.decode(data, (bool));
+    }
+&nbsp;
+    /**
+     * @dev Проверяет, находится ли адрес в черном списке
+     * @param account Адрес для проверки
+     * @return true если адрес в черном списке
+     */
+    function _isBlacklisted(address account) internal view returns (bool) {
+        // Используем staticcall для вызова функции isBlacklisted из CXBTFacet
+        // Функция возвращает bool, поэтому декодируем результат
+        (bool success, bytes memory data) = address(this).staticcall(
+            abi.encodeWithSignature("isBlacklisted(address)", account)
+        );
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!success || data.length == 0) {
+<span class="cstat-no" title="statement not covered" >            return false;</span>
+        }
+        return abi.decode(data, (bool));
+    }
+&nbsp;
+    /**
+     * @dev Инициализация ERC20 facet
+     * @param name Название токена
+     * @param symbol Символ токена (тикер)
+     * @param decimals Количество десятичных знаков
+     * @param initialSupply Начальное количество токенов
+     */
+    function initERC20(
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        uint256 initialSupply
+    ) external {
+        ERC20Storage storage s = ds();
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(bytes(s._name).length == 0, "Already initialized");
+        
+        s._name = name;
+        s._symbol = symbol;
+        s._decimals = decimals;
+        s._totalSupply = initialSupply;
+        
+        // Минтинг токенов добавляет их в общий баланс, но НЕ в unlockedBalance (токены заблокированы)
+        s._balances[msg.sender] = initialSupply;
+        // unlockedBalance остаётся 0, токены заблокированы
+        
+        emit Transfer(address(0), msg.sender, initialSupply);
+    }
+&nbsp;
+    /**
+     * @dev Возвращает количество токенов, которыми владеет аккаунт
+     * @param account Адрес аккаунта
+     * @return Общее количество токенов (unlocked + locked)
+     */
+    function balanceOf(address account) external view override returns (uint256) {
+        return ds()._balances[account];
+    }
+&nbsp;
+    /**
+     * @dev Возвращает количество разблокированных токенов аккаунта
+     * @param account Адрес аккаунта
+     * @return Количество разблокированных токенов
+     */
+<span class="fstat-no" title="function not covered" >    function unlockedBalanceOf(address account) external view returns (uint256) {</span>
+<span class="cstat-no" title="statement not covered" >        return ds()._unlockedBalance[account];</span>
+    }
+&nbsp;
+    /**
+     * @dev Возвращает количество заблокированных токенов аккаунта
+     * @param account Адрес аккаунта
+     * @return Количество заблокированных токенов
+     */
+<span class="fstat-no" title="function not covered" >    function lockedBalanceOf(address account) external view returns (uint256) {</span>
+<span class="cstat-no" title="statement not covered" >        ERC20Storage storage s = ds();</span>
+<span class="cstat-no" title="statement not covered" >        return s._balances[account] - s._unlockedBalance[account];</span>
+    }
+&nbsp;
+    /**
+     * @dev Перемещает количество токенов с адреса вызывающего на другой адрес
+     * @param to Адрес получателя
+     * @param amount Количество токенов для перевода
+     * @return Возвращает true при успешном выполнении
+     */
+    function transfer(address to, uint256 amount) external override whenNotPaused returns (bool) {
+        _transfer(msg.sender, to, amount);
+        return true;
+    }
+&nbsp;
+    /**
+     * @dev Возвращает оставшееся количество токенов, которые spender может потратить от имени owner
+     * @param owner Адрес владельца токенов
+     * @param spender Адрес спонсора
+     * @return Оставшееся количество токенов для траты
+     */
+    function allowance(address owner, address spender) external view override returns (uint256) {
+        return ds()._allowances[owner][spender];
+    }
+&nbsp;
+    /**
+     * @dev Устанавливает количество токенов, которые spender может потратить от имени владельца
+     * @param spender Адрес спонсора
+     * @param amount Количество токенов для разрешения
+     * @return Возвращает true при успешном выполнении
+     */
+    function approve(address spender, uint256 amount) external override <span class="missing-if-branch" title="else path not taken" >E</span>whenNotPaused returns (bool) {
+        _approve(msg.sender, spender, amount);
+        return true;
+    }
+&nbsp;
+    /**
+     * @dev Перемещает количество токенов с адреса from на адрес to с использованием механизма разрешения
+     * @param from Адрес отправителя
+     * @param to Адрес получателя
+     * @param amount Количество токенов для перевода
+     * @return Возвращает true при успешном выполнении
+     */
+    function transferFrom(address from, address to, uint256 amount) external override <span class="missing-if-branch" title="else path not taken" >E</span>whenNotPaused returns (bool) {
+        address spender = msg.sender;
+        _spendAllowance(from, spender, amount);
+        _transfer(from, to, amount);
+        return true;
+    }
+&nbsp;
+    /**
+     * @dev Возвращает общее количество токенов
+     * @return Общее количество токенов
+     */
+    function totalSupply() external view override returns (uint256) {
+        return ds()._totalSupply;
+    }
+&nbsp;
+    /**
+     * @dev Возвращает название токена
+     * @return Название токена
+     */
+    function name() external view override returns (string memory) {
+        return ds()._name;
+    }
+&nbsp;
+    /**
+     * @dev Возвращает символ токена
+     * @return Символ токена
+     */
+    function symbol() external view override returns (string memory) {
+        return ds()._symbol;
+    }
+&nbsp;
+    /**
+     * @dev Возвращает количество десятичных знаков токена
+     * @return Количество десятичных знаков
+     */
+    function decimals() external view override returns (uint8) {
+        return ds()._decimals;
+    }
+&nbsp;
+    /**
+     * @dev Внутренняя функция для перевода токенов
+     * @param from Адрес отправителя
+     * @param to Адрес получателя
+     * @param amount Количество токенов для перевода
+     */
+    function _transfer(address from, address to, uint256 amount) internal {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(from != address(0), "ERC20: transfer from the zero address");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(to != address(0), "ERC20: transfer to the zero address");
+        
+        // Проверяем черный список
+        require(!_isBlacklisted(from), "ERC20: sender is blacklisted");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(!_isBlacklisted(to), "ERC20: recipient is blacklisted");
+        
+        ERC20Storage storage s = ds();
+        
+        // Если отправитель в белом списке, он может переводить любые токены
+        // Иначе проверяем unlockedBalance отправителя (можно перевести только разблокированные токены)
+        bool fromWhitelisted = _isWhitelisted(from);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!fromWhitelisted) {
+<span class="cstat-no" title="statement not covered" >            uint256 fromUnlocked = s._unlockedBalance[from];</span>
+<span class="cstat-no" title="statement not covered" >            require(fromUnlocked &gt;= amount, "ERC20: transfer amount exceeds unlocked balance")</span>;
+            s._unlockedBalance[from] = fromUnlocked - amount;
+        } else {
+            // Если отправитель в белом списке, списываем из unlockedBalance если есть, иначе из общего баланса
+            uint256 fromUnlocked = s._unlockedBalance[from];
+            uint256 fromBalance = s._balances[from];
+            <span class="missing-if-branch" title="else path not taken" >E</span>require(fromBalance &gt;= amount, "ERC20: transfer amount exceeds balance");
+            
+            if (fromUnlocked &gt;= amount) {
+                s._unlockedBalance[from] = fromUnlocked - amount;
+            } else {
+                // Списываем все разблокированные и часть заблокированных
+                s._unlockedBalance[from] = 0;
+            }
+        }
+        
+        // Обновляем общий баланс
+        s._balances[from] -= amount;
+        s._balances[to] += amount;
+        
+        // Если получатель в белом списке, он получает токены как разблокированные
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (_isWhitelisted(to)) {
+            s._unlockedBalance[to] += amount;
+        }
+        // Иначе получатель получает токены в общем балансе, но НЕ в unlockedBalance (заблокированы)
+        // unlockedBalance[to] остаётся без изменений
+        
+        emit Transfer(from, to, amount);
+    }
+&nbsp;
+    /**
+     * @dev Внутренняя функция для установки разрешения
+     * @param owner Адрес владельца токенов
+     * @param spender Адрес спонсора
+     * @param amount Количество токенов для разрешения
+     */
+    function _approve(address owner, address spender, uint256 amount) internal {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(owner != address(0), "ERC20: approve from the zero address");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(spender != address(0), "ERC20: approve to the zero address");
+        
+        // Если владелец в белом списке, он может одобрить любые токены
+        // Иначе проверяем, что пользователь не одобряет больше токенов, чем у него разблокировано
+        bool ownerWhitelisted = _isWhitelisted(owner);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!ownerWhitelisted) {
+<span class="cstat-no" title="statement not covered" >            require(amount &lt;= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance")</span>;
+        }
+        
+        ds()._allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+&nbsp;
+    /**
+     * @dev Внутренняя функция для траты разрешения
+     * @param owner Адрес владельца токенов
+     * @param spender Адрес спонсора
+     * @param amount Количество токенов для траты
+     */
+    function _spendAllowance(address owner, address spender, uint256 amount) internal {
+        uint256 currentAllowance = ds()._allowances[owner][spender];
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (currentAllowance != type(uint256).max) {
+            <span class="missing-if-branch" title="else path not taken" >E</span>require(currentAllowance &gt;= amount, "ERC20: insufficient allowance");
+            unchecked {
+                _approve(owner, spender, currentAllowance - amount);
+            }
+        }
+    }
+&nbsp;
+    /**
+     * @dev Увеличивает разрешение на трату токенов
+     * @param spender Адрес спонсора
+     * @param addedValue Количество токенов для добавления
+     * @return Возвращает true при успешном выполнении
+     */
+<span class="fstat-no" title="function not covered" >    function increaseAllowance(address spender, uint256 addedValue) external whenNotPaused returns (bool) {</span>
+<span class="cstat-no" title="statement not covered" >        address owner = msg.sender;</span>
+<span class="cstat-no" title="statement not covered" >        uint256 newAllowance = ds()._allowances[owner][spender] + addedValue;</span>
+        
+        // Если владелец не в белом списке, проверяем лимит
+<span class="cstat-no" title="statement not covered" >        if (!_isWhitelisted(owner)) {</span>
+<span class="cstat-no" title="statement not covered" >            require(newAllowance &lt;= ds()._unlockedBalance[owner], "ERC20: approve amount exceeds unlocked balance")</span>;
+        }
+        
+<span class="cstat-no" title="statement not covered" >        _approve(owner, spender, newAllowance)</span>;
+<span class="cstat-no" title="statement not covered" >        return true;</span>
+    }
+&nbsp;
+    /**
+     * @dev Уменьшает разрешение на трату токенов
+     * @param spender Адрес спонсора
+     * @param subtractedValue Количество токенов для вычитания
+     * @return Возвращает true при успешном выполнении
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) external <span class="missing-if-branch" title="else path not taken" >E</span>whenNotPaused returns (bool) {
+        address owner = msg.sender;
+        uint256 currentAllowance = ds()._allowances[owner][spender];
+        require(currentAllowance &gt;= subtractedValue, "ERC20: decreased allowance below zero");
+        unchecked {
+            _approve(owner, spender, currentAllowance - subtractedValue);
+        }
+        return true;
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Mar 24 2026 22:30:33 GMT+0200 (Восточная Европа, стандартное время)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

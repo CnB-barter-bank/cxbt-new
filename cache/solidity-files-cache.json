@@ -305,48 +305,6 @@
         "Pausable"
       ]
     },
-    "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/CXBT.sol": {
-      "lastModificationDate": 1774356076643,
-      "contentHash": "0da4839850e568e7e27fd91fbe3dd91f",
-      "sourceName": "contracts/CXBT.sol",
-      "solcConfig": {
-        "version": "0.8.27",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol",
-        "@openzeppelin/contracts/access/Ownable.sol",
-        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
-        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "CXBT"
-      ]
-    },
     "/home/bgrusnak/Projects/CXB/cxbt-new/node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol": {
       "lastModificationDate": 1774337159538,
       "contentHash": "6e5efb502dd6652d12ad15eea2c5bdf4",
@@ -608,8 +566,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/facets/CXBTFacet.sol": {
-      "lastModificationDate": 1774359697875,
-      "contentHash": "a3026adc0b2e00a8880565f33bba0a89",
+      "lastModificationDate": 1774375363659,
+      "contentHash": "cad605848720c62eab102735f259af75",
       "sourceName": "contracts/facets/CXBTFacet.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -637,6 +595,7 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
         "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
         "../interfaces/ICXBTFacet.sol",
         "../libraries/LibDiamond.sol"
@@ -649,8 +608,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/interfaces/ICXBTFacet.sol": {
-      "lastModificationDate": 1774356076644,
-      "contentHash": "7ba29944dfe2fd9b9a08df326e5cfb3a",
+      "lastModificationDate": 1774377618395,
+      "contentHash": "5b3439bcc7dcbed4c4b156306eaeeef6",
       "sourceName": "contracts/interfaces/ICXBTFacet.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -952,8 +911,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/facets/ERC20Facet.sol": {
-      "lastModificationDate": 1774360368110,
-      "contentHash": "49c6be500ffdd3682c17d3362668715b",
+      "lastModificationDate": 1774377415029,
+      "contentHash": "574ae2bb9f0e7c2dcfb380be6f0f2f0c",
       "sourceName": "contracts/facets/ERC20Facet.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -992,8 +951,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/interfaces/IERC20Facet.sol": {
-      "lastModificationDate": 1774347098002,
-      "contentHash": "1919ecb2249d5390c461527dae334217",
+      "lastModificationDate": 1774377510589,
+      "contentHash": "bea7c4c720f46b3de5a099c071bdf65e",
       "sourceName": "contracts/interfaces/IERC20Facet.sol",
       "solcConfig": {
         "version": "0.8.27",

@@ -7,6 +7,49 @@ pragma solidity ^0.8.20;
  */
 interface IERC20Facet {
     /**
+     * @dev Инициализация ERC20 facet
+     * @param name Название токена
+     * @param symbol Символ токена (тикер)
+     * @param decimals Количество десятичных знаков
+     * @param initialSupply Начальное количество токенов
+     */
+    function initERC20(
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        uint256 initialSupply
+    ) external;
+
+    /**
+     * @dev Возвращает количество разблокированных токенов аккаунта
+     * @param account Адрес аккаунта
+     * @return Количество разблокированных токенов
+     */
+    function unlockedBalanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Возвращает количество заблокированных токенов аккаунта
+     * @param account Адрес аккаунта
+     * @return Количество заблокированных токенов
+     */
+    function lockedBalanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Увеличивает разрешение на трату токенов
+     * @param spender Адрес спонсора
+     * @param addedValue Количество токенов для добавления
+     * @return Возвращает true при успешном выполнении
+     */
+    function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
+
+    /**
+     * @dev Уменьшает разрешение на трату токенов
+     * @param spender Адрес спонсора
+     * @param subtractedValue Количество токенов для вычитания
+     * @return Возвращает true при успешном выполнении
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
+    /**
      * @dev Возвращает количество токенов, которыми владеет аккаунт
      * @param account Адрес аккаунта
      * @return Количество токенов

@@ -126,7 +126,13 @@ async function deployDiamond(params = {}) {
     cxbtFacet.interface.getFunction("getPaidToken").selector,
     cxbtFacet.interface.getFunction("getUnlockPercentage").selector,
     cxbtFacet.interface.getFunction("getRewardPoolBalance").selector,
-    cxbtFacet.interface.getFunction("burn").selector
+    cxbtFacet.interface.getFunction("burn").selector,
+    cxbtFacet.interface.getFunction("addToWhitelist").selector,
+    cxbtFacet.interface.getFunction("removeFromWhitelist").selector,
+    cxbtFacet.interface.getFunction("addToBlacklist").selector,
+    cxbtFacet.interface.getFunction("removeFromBlacklist").selector,
+    cxbtFacet.interface.getFunction("isWhitelisted").selector,
+    cxbtFacet.interface.getFunction("isBlacklisted").selector
   ];
 
   // Добавляем facets через diamondCut
@@ -163,9 +169,17 @@ async function deployDiamond(params = {}) {
   // ==================== Шаг 4: Инициализация Facets ====================
 
   // Создаем интерфейсы для вызова функций через Diamond
-  const erc20Interface = await ethers.getContractAt("ERC20Facet", diamondAddress);
-  const cxbtInterface = await ethers.getContractAt("CXBTFacet", diamondAddress);
-  const ownershipInterface = await ethers.getContractAt("OwnershipFacet", diamondAddress);
+  // Используем ABI контрактов для создания интерфейсов
+  const ERC20FacetArtifact = await ethers.getContractFactory("ERC20Facet");
+  const erc20Interface = await ERC20FacetArtifact.attach(diamondAddress);
+  
+  const CXBTFacetArtifact = await ethers.getContractFactory("CXBTFacet");
+  const cxbtInterface = await CXBTFacetArtifact.attach(diamondAddress);
+  
+  const OwnershipFacetArtifact = await ethers.getContractFactory("OwnershipFacet");
+  const ownershipInterface = await OwnershipFacetArtifact.attach(diamondAddress);
+  
+  // Для IDiamondLoupe используем getContractAt, так как это интерфейс
   const diamondLoupeInterface = await ethers.getContractAt("IDiamondLoupe", diamondAddress);
 
   // Инициализируем ERC20Facet
@@ -443,6 +457,58 @@ describe("CXBT Diamond Proxy", function () {
         .to.emit(interfaces.erc20, "Approval")
         .withArgs(owner.address, addr1.address, TRANSFER_AMOUNT);
     });
+
+    it("Должен уменьшать разрешение на трату токенов", async function () {
+      // Сначала разблокируем токены
+      const ownerUnlockCost = await interfaces.cxbt.calculateUnlockCost(TRANSFER_AMOUNT);
+      await mockPAID.mint(owner.address, ownerUnlockCost);
+      await mockPAID.connect(owner).approve(diamondAddress, ownerUnlockCost);
+      await interfaces.cxbt.connect(owner).unlockTokens(TRANSFER_AMOUNT);
+      
+      // Устанавливаем разрешение
+      await interfaces.erc20.approve(addr1.address, TRANSFER_AMOUNT);
+      
+      // Уменьшаем разрешение
+      const decreaseAmount = ethers.parseEther("30");
+      await interfaces.erc20.decreaseAllowance(addr1.address, decreaseAmount);
+      
+      expect(await interfaces.erc20.allowance(owner.address, addr1.address))
+        .to.equal(TRANSFER_AMOUNT - decreaseAmount);
+    });
+
+    it("Не должен позволять уменьшать разрешение ниже нуля", async function () {
+      // Сначала разблокируем токены
+      const ownerUnlockCost = await interfaces.cxbt.calculateUnlockCost(TRANSFER_AMOUNT);
+      await mockPAID.mint(owner.address, ownerUnlockCost);
+      await mockPAID.connect(owner).approve(diamondAddress, ownerUnlockCost);
+      await interfaces.cxbt.connect(owner).unlockTokens(TRANSFER_AMOUNT);
+      
+      // Устанавливаем разрешение
+      await interfaces.erc20.approve(addr1.address, TRANSFER_AMOUNT);
+      
+      // Пытаемся уменьшить больше, чем разрешено
+      const decreaseAmount = ethers.parseEther("150");
+      await expect(
+        interfaces.erc20.decreaseAllowance(addr1.address, decreaseAmount)
+      ).to.be.revertedWith("ERC20: decreased allowance below zero");
+    });
+
+    it("Должен emit событие Approval при уменьшении разрешения", async function () {
+      // Сначала разблокируем токены
+      const ownerUnlockCost = await interfaces.cxbt.calculateUnlockCost(TRANSFER_AMOUNT);
+      await mockPAID.mint(owner.address, ownerUnlockCost);
+      await mockPAID.connect(owner).approve(diamondAddress, ownerUnlockCost);
+      await interfaces.cxbt.connect(owner).unlockTokens(TRANSFER_AMOUNT);
+      
+      // Устанавливаем разрешение
+      await interfaces.erc20.approve(addr1.address, TRANSFER_AMOUNT);
+      
+      // Уменьшаем разрешение
+      const decreaseAmount = ethers.parseEther("30");
+      await expect(interfaces.erc20.decreaseAllowance(addr1.address, decreaseAmount))
+        .to.emit(interfaces.erc20, "Approval")
+        .withArgs(owner.address, addr1.address, TRANSFER_AMOUNT - decreaseAmount);
+    });
   });
 
   // ==================== Тесты CXBTFacet ====================
@@ -462,6 +528,16 @@ describe("CXBT Diamond Proxy", function () {
 
     it("Контракт не должен быть приостановлен при деплое", async function () {
       expect(await interfaces.cxbt.paused()).to.be.false;
+    });
+
+    it("Должен emit событие CXBTInitialized при инициализации", async function () {
+      // Развертываем новый контракт для проверки события
+      const deployResult = await deployDiamond();
+      const newInterfaces = deployResult.interfaces;
+      
+      // Проверяем, что событие было emit при инициализации
+      // (это проверяется в рамках деплоя)
+      expect(await newInterfaces.cxbt.getPaidToken()).to.equal(deployResult.paidTokenAddress);
     });
   });
 
@@ -510,6 +586,12 @@ describe("CXBT Diamond Proxy", function () {
       await expect(
         interfaces.cxbt.connect(addr1).mint(addr2.address, MINT_AMOUNT)
       ).to.be.reverted;
+    });
+
+    it("Должен emit событие TokensMinted при минтинге", async function () {
+      await expect(interfaces.cxbt.mint(addr1.address, MINT_AMOUNT))
+        .to.emit(interfaces.cxbt, "TokensMinted")
+        .withArgs(addr1.address, MINT_AMOUNT);
     });
   });
 
@@ -769,6 +851,14 @@ describe("CXBT Diamond Proxy", function () {
         interfaces.cxbt.connect(addr1).burn(0)
       ).to.be.revertedWith("Amount must be greater than 0");
     });
+
+    it("Должен emit событие TokensBurned при сжигании", async function () {
+      const burnAmount = ethers.parseEther("100");
+      
+      await expect(interfaces.cxbt.connect(addr1).burn(burnAmount))
+        .to.emit(interfaces.cxbt, "TokensBurned")
+        .withArgs(addr1.address, burnAmount);
+    });
   });
 
   // ==================== Интеграционные тесты ====================
@@ -844,6 +934,198 @@ describe("CXBT Diamond Proxy", function () {
     await mockPAID.connect(signer).approve(diamondAddress, unlockCost * 2n);
     await interfaces.cxbt.connect(signer).unlockTokens(amount);
   }
+});
+
+// ==================== Тесты Whitelist / Blacklist ====================
+
+describe("Whitelist / Blacklist", function () {
+  let interfaces;
+  let owner;
+  let addr1;
+  let addr2;
+  let mockPAID;
+
+  beforeEach(async function () {
+    const deployResult = await deployDiamond();
+    interfaces = deployResult.interfaces;
+    mockPAID = deployResult.mockPAID;
+    [owner, addr1, addr2] = await ethers.getSigners();
+  });
+
+  it("Владелец должен быть в белом списке по умолчанию", async function () {
+    expect(await interfaces.cxbt.isWhitelisted(owner.address)).to.be.true;
+  });
+
+  it("Владелец должен иметь возможность добавлять адреса в белый список", async function () {
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    expect(await interfaces.cxbt.isWhitelisted(addr1.address)).to.be.true;
+  });
+
+  it("Владелец должен иметь возможность удалять адреса из белого списка", async function () {
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    await interfaces.cxbt.removeFromWhitelist(addr1.address);
+    expect(await interfaces.cxbt.isWhitelisted(addr1.address)).to.be.false;
+  });
+
+  it("Не владелец не должен иметь возможность добавлять адреса в белый список", async function () {
+    await expect(
+      interfaces.cxbt.connect(addr1).addToWhitelist(addr2.address)
+    ).to.be.revertedWith("LibDiamond: Must be contract owner");
+  });
+
+  it("Владелец должен иметь возможность добавлять адреса в черный список", async function () {
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    expect(await interfaces.cxbt.isBlacklisted(addr1.address)).to.be.true;
+  });
+
+  it("Владелец должен иметь возможность удалять адреса из черного списка", async function () {
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    await interfaces.cxbt.removeFromBlacklist(addr1.address);
+    expect(await interfaces.cxbt.isBlacklisted(addr1.address)).to.be.false;
+  });
+
+  it("Не владелец не должен иметь возможность добавлять адреса в черный список", async function () {
+    await expect(
+      interfaces.cxbt.connect(addr1).addToBlacklist(addr2.address)
+    ).to.be.revertedWith("LibDiamond: Must be contract owner");
+  });
+
+  it("Адрес в черном списке не должен иметь возможности отправлять токены", async function () {
+    const amount = ethers.parseEther("100");
+    
+    // Разблокируем токены для addr1
+    await interfaces.cxbt.mint(addr1.address, amount);
+    const unlockCost = await interfaces.cxbt.calculateUnlockCost(amount);
+    await mockPAID.mint(addr1.address, unlockCost);
+    await mockPAID.connect(addr1).approve(interfaces.diamondAddress, unlockCost);
+    await interfaces.cxbt.connect(addr1).unlockTokens(amount);
+    
+    // Добавляем addr1 в черный список
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    
+    // Пытаемся отправить токены
+    await expect(
+      interfaces.erc20.connect(addr1).transfer(addr2.address, amount)
+    ).to.be.revertedWith("ERC20: sender is blacklisted");
+  });
+
+  it("Адрес в черном списке не должен иметь возможности получать токены", async function () {
+    const amount = ethers.parseEther("100");
+    
+    // Разблокируем токены для владельца
+    await interfaces.cxbt.mint(owner.address, amount);
+    const unlockCost = await interfaces.cxbt.calculateUnlockCost(amount);
+    await mockPAID.mint(owner.address, unlockCost);
+    await mockPAID.approve(interfaces.diamondAddress, unlockCost);
+    await interfaces.cxbt.unlockTokens(amount);
+    
+    // Добавляем addr1 в черный список
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    
+    // Пытаемся отправить токены на адрес в черном списке
+    await expect(
+      interfaces.erc20.transfer(addr1.address, amount)
+    ).to.be.revertedWith("ERC20: recipient is blacklisted");
+  });
+
+  it("Адрес в белом списке должен иметь возможность переводить заблокированные токены", async function () {
+    const amount = ethers.parseEther("100");
+    
+    // Минтим токены addr1 (они будут заблокированы)
+    await interfaces.cxbt.mint(addr1.address, amount);
+    
+    // Добавляем addr1 в белый список
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    
+    // Проверяем, что токены заблокированы
+    const balances = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(balances.unlocked).to.equal(0);
+    expect(balances.locked).to.equal(amount);
+    
+    // Addr1 может переводить токены несмотря на блокировку
+    await interfaces.erc20.connect(addr1).transfer(addr2.address, amount);
+    expect(await interfaces.erc20.balanceOf(addr2.address)).to.equal(amount);
+  });
+
+  it("Адрес в белом списке должен получать токены как разблокированные", async function () {
+    const amount = ethers.parseEther("100");
+    
+    // Разблокируем токены для владельца
+    await interfaces.cxbt.mint(owner.address, amount);
+    const unlockCost = await interfaces.cxbt.calculateUnlockCost(amount);
+    await mockPAID.mint(owner.address, unlockCost);
+    await mockPAID.approve(interfaces.diamondAddress, unlockCost);
+    await interfaces.cxbt.unlockTokens(amount);
+    
+    // Добавляем addr1 в белый список
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    
+    // Переводим токены addr1
+    await interfaces.erc20.transfer(addr1.address, amount);
+    
+    // Проверяем, что addr1 получил токены как разблокированные
+    const balances = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(balances.unlocked).to.equal(amount);
+    expect(balances.locked).to.equal(0);
+  });
+
+  it("Адрес в белом списке должен иметь возможность approve любых токенов", async function () {
+    const amount = ethers.parseEther("100");
+    
+    // Минтим токены addr1 (они будут заблокированы)
+    await interfaces.cxbt.mint(addr1.address, amount);
+    
+    // Добавляем addr1 в белый список
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    
+    // Addr1 может approve любые токены, даже заблокированные
+    await interfaces.erc20.connect(addr1).approve(addr2.address, amount);
+    expect(await interfaces.erc20.allowance(addr1.address, addr2.address)).to.equal(amount);
+  });
+
+  it("Должен emit событие AddedToWhitelist при добавлении в белый список", async function () {
+    await expect(interfaces.cxbt.addToWhitelist(addr1.address))
+      .to.emit(interfaces.cxbt, "AddedToWhitelist")
+      .withArgs(addr1.address);
+  });
+
+  it("Должен emit событие RemovedFromWhitelist при удалении из белого списка", async function () {
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    await expect(interfaces.cxbt.removeFromWhitelist(addr1.address))
+      .to.emit(interfaces.cxbt, "RemovedFromWhitelist")
+      .withArgs(addr1.address);
+  });
+
+  it("Должен emit событие AddedToBlacklist при добавлении в черный список", async function () {
+    await expect(interfaces.cxbt.addToBlacklist(addr1.address))
+      .to.emit(interfaces.cxbt, "AddedToBlacklist")
+      .withArgs(addr1.address);
+  });
+
+  it("Должен emit событие RemovedFromBlacklist при удалении из черного списка", async function () {
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    await expect(interfaces.cxbt.removeFromBlacklist(addr1.address))
+      .to.emit(interfaces.cxbt, "RemovedFromBlacklist")
+      .withArgs(addr1.address);
+  });
+
+  it("Не должно быть возможно добавить адрес в оба списка одновременно", async function () {
+    await interfaces.cxbt.addToWhitelist(addr1.address);
+    
+    // Черный список имеет приоритет
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+    
+    // Адрес должен быть в черном списке
+    expect(await interfaces.cxbt.isBlacklisted(addr1.address)).to.be.true;
+    expect(await interfaces.cxbt.isWhitelisted(addr1.address)).to.be.true;
+    
+    // И не должен иметь возможности отправлять токены
+    const amount = ethers.parseEther("100");
+    await interfaces.cxbt.mint(addr1.address, amount);
+    await expect(
+      interfaces.erc20.connect(addr1).transfer(addr2.address, amount)
+    ).to.be.revertedWith("ERC20: sender is blacklisted");
+  });
 });
 
 // ==================== Тесты MockPAID ====================

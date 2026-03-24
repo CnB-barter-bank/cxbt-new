@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../interfaces/ICXBTFacet.sol";
 import "../libraries/LibDiamond.sol";
@@ -12,6 +13,7 @@ import "../libraries/LibDiamond.sol";
  * @custom:security-contact security@example.com
  */
 contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     bytes32 constant CXBT_STORAGE_POSITION = keccak256("cxbt.facet.storage");
     bytes32 constant ERC20_STORAGE_POSITION = keccak256("erc20.facet.storage");
 
@@ -53,6 +55,10 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         uint256 rewardPoolBalance;
         // Флаг паузы
         bool paused;
+        // Белый список (разрешает переводы игнорируя блокировку)
+        mapping(address => bool) whitelist;
+        // Черный список (запрещает переводы)
+        mapping(address => bool) blacklist;
     }
 
     /**
@@ -89,7 +95,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @param _paidToken Адрес контракта PAID токена
      * @param _unlockPercentage Процент разблокировки в базисных пунктах (макс 2000 = 20%)
      */
-    function initCXBT(address _paidToken, uint256 _unlockPercentage) external {
+    function initCXBT(address _paidToken, uint256 _unlockPercentage) external onlyOwner {
         CXBTStorage storage s = ds();
         require(address(s.paidToken) == address(0), "Already initialized");
         require(_paidToken != address(0), "Invalid PAID token address");
@@ -98,6 +104,11 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         s.paidToken = IERC20(_paidToken);
         s.unlockPercentage = _unlockPercentage;
         s.paused = false;
+        
+        // Владелец по умолчанию в белом списке
+        s.whitelist[msg.sender] = true;
+        
+        emit CXBTInitialized(_paidToken, _unlockPercentage);
     }
 
     /**
@@ -149,8 +160,12 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         uint256 cost = calculateUnlockCost(unlockAmount);
         
         // Переводим PAID токены от пользователя на контракт
-        bool success = cxbtS.paidToken.transferFrom(msg.sender, address(this), cost);
-        require(success, "PAID token transfer failed");
+        cxbtS.paidToken.safeTransferFrom(msg.sender, address(this), cost);
+        
+        // Сразу переводим PAID токены владельцу
+        if (cost > 0) {
+            cxbtS.paidToken.safeTransfer(LibDiamond.contractOwner(), cost);
+        }
         
         // Разблокируем токены (переносим из locked в unlocked)
         erc20S._unlockedBalance[msg.sender] = unlockedBalance + unlockAmount;
@@ -171,7 +186,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @notice Только владелец контракта может вызывать эту функцию
      * @notice Списывает разблокированные CXBT токены у владельца и добавляет их в пул наград
      */
-    function addToRewardPool(uint256 amount) external override onlyOwner {
+    function addToRewardPool(uint256 amount) external override onlyOwner nonReentrant {
         require(amount > 0, "Amount must be greater than 0");
         
         ERC20Storage storage erc20S = erc20Ds();
@@ -196,7 +211,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @notice Только владелец контракта может вызывать эту функцию
      * @notice Изымает CXBT токены из пула наград и отправляет их владельцу
      */
-    function withdrawFromRewardPool(uint256 amount) external override onlyOwner {
+    function withdrawFromRewardPool(uint256 amount) external override onlyOwner nonReentrant {
         require(amount > 0, "Amount must be greater than 0");
         
         ERC20Storage storage erc20S = erc20Ds();
@@ -284,7 +299,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @dev Функция для сжигания токенов
      * @param amount Количество токенов для сжигания
      */
-    function burn(uint256 amount) external override {
+    function burn(uint256 amount) external override whenNotPaused {
         require(amount > 0, "Amount must be greater than 0");
         
         ERC20Storage storage s = erc20Ds();
@@ -310,6 +325,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         s._totalSupply -= amount;
         
         emit Transfer(msg.sender, address(0), amount);
+        emit TokensBurned(msg.sender, amount);
     }
 
     /**
@@ -337,7 +353,86 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @notice Только владелец контракта может вызывать эту функцию
      */
     function mint(address to, uint256 amount) external override onlyOwner {
+        require(to != address(0), "Cannot mint to zero address");
         _mintWithoutPause(to, amount);
+        emit TokensMinted(to, amount);
     }
 
+    // ==================== Whitelist / Blacklist Functions ====================
+
+    /**
+     * @dev Добавляет адрес в белый список
+     * @param account Адрес для добавления
+     * @notice Адреса в белом списке могут игнорировать блокировку токенов
+     */
+    function addToWhitelist(address account) external onlyOwner {
+        require(account != address(0), "Invalid address");
+        CXBTStorage storage s = ds();
+        require(!s.whitelist[account], "Already whitelisted");
+        s.whitelist[account] = true;
+        emit AddedToWhitelist(account);
+    }
+
+    /**
+     * @dev Удаляет адрес из белого списка
+     * @param account Адрес для удаления
+     */
+    function removeFromWhitelist(address account) external onlyOwner {
+        CXBTStorage storage s = ds();
+        require(s.whitelist[account], "Not whitelisted");
+        s.whitelist[account] = false;
+        emit RemovedFromWhitelist(account);
+    }
+
+    /**
+     * @dev Добавляет адрес в черный список
+     * @param account Адрес для добавления
+     * @notice Адреса в черном списке не могут ни отправлять, ни получать токены
+     */
+    function addToBlacklist(address account) external onlyOwner {
+        require(account != address(0), "Invalid address");
+        CXBTStorage storage s = ds();
+        require(!s.blacklist[account], "Already blacklisted");
+        s.blacklist[account] = true;
+        emit AddedToBlacklist(account);
+    }
+
+    /**
+     * @dev Удаляет адрес из черного списка
+     * @param account Адрес для удаления
+     */
+    function removeFromBlacklist(address account) external onlyOwner {
+        CXBTStorage storage s = ds();
+        require(s.blacklist[account], "Not blacklisted");
+        s.blacklist[account] = false;
+        emit RemovedFromBlacklist(account);
+    }
+
+    /**
+     * @dev Проверяет, находится ли адрес в белом списке
+     * @param account Адрес для проверки
+     * @return true если адрес в белом списке
+     */
+    function isWhitelisted(address account) external view returns (bool) {
+        return ds().whitelist[account];
+    }
+
+    /**
+     * @dev Проверяет, находится ли адрес в черном списке
+     * @param account Адрес для проверки
+     * @return true если адрес в черном списке
+     */
+    function isBlacklisted(address account) external view returns (bool) {
+        return ds().blacklist[account];
+    }
+
+    // ==================== Events ====================
+
+    event CXBTInitialized(address indexed paidToken, uint256 unlockPercentage);
+    event TokensMinted(address indexed to, uint256 amount);
+    event TokensBurned(address indexed from, uint256 amount);
+    event AddedToWhitelist(address indexed account);
+    event RemovedFromWhitelist(address indexed account);
+    event AddedToBlacklist(address indexed account);
+    event RemovedFromBlacklist(address indexed account);
 }
