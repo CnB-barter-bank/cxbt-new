@@ -64,6 +64,16 @@ interface ICXBTFacet {
     function unlockTokens(uint256 unlockAmount) external;
 
     /**
+     * @dev Разблокирует токены владельцем для любого пользователя
+     * @param user Адрес пользователя, чьи токены нужно разблокировать
+     * @param unlockAmount Количество токенов для разблокировки
+     * @notice Только владелец контракта может вызывать эту функцию
+     * @notice Не требует оплаты в PAID токенах
+     * @notice Не начисляет награду из пула наград
+     */
+    function ownerUnlockTokens(address user, uint256 unlockAmount) external;
+
+    /**
      * @dev Добавляет токены в пул наград
      * @param amount Количество токенов для добавления в пул наград
      * @notice Только владелец контракта может вызывать эту функцию
@@ -155,6 +165,7 @@ interface ICXBTFacet {
  
     // Events
     event TokensUnlocked(address indexed user, uint256 amount, uint256 paidPaid);
+    event TokensUnlockedByOwner(address indexed owner, address indexed user, uint256 amount);
     event RewardPoolAdded(uint256 amount);
     event RewardPoolWithdrawn(uint256 amount);
     event UnlockPercentageChanged(uint256 oldPercentage, uint256 newPercentage);

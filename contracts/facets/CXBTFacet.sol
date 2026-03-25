@@ -181,6 +181,32 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
     }
 
     /**
+     * @dev Разблокирует токены владельцем для любого пользователя
+     * @param user Адрес пользователя, чьи токены нужно разблокировать
+     * @param unlockAmount Количество токенов для разблокировки
+     * @notice Только владелец контракта может вызывать эту функцию
+     * @notice Не требует оплаты в PAID токенах
+     * @notice Не начисляет награду из пула наград
+     */
+    function ownerUnlockTokens(address user, uint256 unlockAmount) external override onlyOwner {
+        require(unlockAmount > 0, "Unlock amount must be greater than 0");
+        require(user != address(0), "Invalid user address");
+        
+        ERC20Storage storage erc20S = erc20Ds();
+        
+        // Проверяем, что у пользователя достаточно заблокированных токенов
+        uint256 totalBalance = erc20S._balances[user];
+        uint256 unlockedBalance = erc20S._unlockedBalance[user];
+        uint256 lockedBalance = totalBalance - unlockedBalance;
+        require(lockedBalance >= unlockAmount, "Insufficient locked tokens");
+        
+        // Разблокируем токены (переносим из locked в unlocked)
+        erc20S._unlockedBalance[user] = unlockedBalance + unlockAmount;
+        
+        emit TokensUnlockedByOwner(msg.sender, user, unlockAmount);
+    }
+
+    /**
      * @dev Добавляет токены в пул наград
      * @param amount Количество токенов для добавления в пул
      * @notice Только владелец контракта может вызывать эту функцию

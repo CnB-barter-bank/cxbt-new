@@ -116,6 +116,7 @@ async function deployDiamond(params = {}) {
     cxbtFacet.interface.getFunction("getTokenBalances").selector,
     cxbtFacet.interface.getFunction("calculateUnlockCost").selector,
     cxbtFacet.interface.getFunction("unlockTokens").selector,
+    cxbtFacet.interface.getFunction("ownerUnlockTokens").selector,
     cxbtFacet.interface.getFunction("addToRewardPool").selector,
     cxbtFacet.interface.getFunction("withdrawFromRewardPool").selector,
     cxbtFacet.interface.getFunction("setUnlockPercentage").selector,
@@ -218,7 +219,8 @@ async function deployDiamond(params = {}) {
       diamondLoupe: diamondLoupeInterface,
       ownership: ownershipInterface,
       erc20: erc20Interface,
-      cxbt: cxbtInterface
+      cxbt: cxbtInterface,
+      diamondAddress: diamondAddress
     }
   };
 }
@@ -1125,6 +1127,177 @@ describe("Whitelist / Blacklist", function () {
     await expect(
       interfaces.erc20.connect(addr1).transfer(addr2.address, amount)
     ).to.be.revertedWith("ERC20: sender is blacklisted");
+  });
+});
+
+// ==================== Тесты ownerUnlockTokens ====================
+
+describe("ownerUnlockTokens", function () {
+  let interfaces;
+  let owner;
+  let addr1;
+  let addr2;
+  let mockPAID;
+  let diamondAddress;
+  const MINT_AMOUNT = ethers.parseEther("1000");
+  const UNLOCK_AMOUNT = ethers.parseEther("500");
+
+  beforeEach(async function () {
+    const deployResult = await deployDiamond();
+    interfaces = deployResult.interfaces;
+    mockPAID = deployResult.mockPAID;
+    diamondAddress = deployResult.diamondAddress;
+    [owner, addr1, addr2] = await ethers.getSigners();
+  });
+
+  it("Владелец должен иметь возможность разблокировать токены любого пользователя", async function () {
+    // Минтим токены addr1 (они будут заблокированы)
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Проверяем начальное состояние
+    let [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(0);
+    expect(locked).to.equal(MINT_AMOUNT);
+    expect(total).to.equal(MINT_AMOUNT);
+
+    // Владелец разблокирует токены addr1
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+
+    // Проверяем, что токены разблокированы
+    [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(UNLOCK_AMOUNT);
+    expect(locked).to.equal(MINT_AMOUNT - UNLOCK_AMOUNT);
+    expect(total).to.equal(MINT_AMOUNT);
+  });
+
+  it("Не владелец не должен иметь возможность разблокировать токены", async function () {
+    // Минтим токены addr2
+    await interfaces.cxbt.mint(addr2.address, MINT_AMOUNT);
+
+    // Addr1 пытается разблокировать токены addr2
+    await expect(
+      interfaces.cxbt.connect(addr1).ownerUnlockTokens(addr2.address, UNLOCK_AMOUNT)
+    ).to.be.revertedWith("LibDiamond: Must be contract owner");
+  });
+
+  it("Не должно быть возможно разблокировать больше токенов, чем заблокировано", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Владелец пытается разблокировать больше, чем есть
+    await expect(
+      interfaces.cxbt.ownerUnlockTokens(addr1.address, MINT_AMOUNT + 1n)
+    ).to.be.revertedWith("Insufficient locked tokens");
+  });
+
+  it("Не должно быть возможно разблокировать 0 токенов", async function () {
+    await expect(
+      interfaces.cxbt.ownerUnlockTokens(addr1.address, 0)
+    ).to.be.revertedWith("Unlock amount must be greater than 0");
+  });
+
+  it("Разблокировка владельцем не должна требовать оплаты в PAID", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Проверяем баланс PAID addr1 (должен быть 0)
+    const addr1PaidBalance = await mockPAID.balanceOf(addr1.address);
+    expect(addr1PaidBalance).to.equal(0);
+
+    // Владелец разблокирует токены addr1
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+
+    // Баланс PAID addr1 все еще 0 (не было списания)
+    expect(await mockPAID.balanceOf(addr1.address)).to.equal(0);
+
+    // Токены разблокированы
+    const [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(UNLOCK_AMOUNT);
+  });
+
+  it("Разблокировка владельцем не должна начислять награду из пула", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Добавляем токены в пул наград
+    await interfaces.cxbt.mint(owner.address, ethers.parseEther("10000"));
+    const ownerUnlockCost = await interfaces.cxbt.calculateUnlockCost(ethers.parseEther("10000"));
+    await mockPAID.mint(owner.address, ownerUnlockCost);
+    await mockPAID.connect(owner).approve(diamondAddress, ownerUnlockCost);
+    await interfaces.cxbt.connect(owner).unlockTokens(ethers.parseEther("10000"));
+    
+    const rewardAmount = ethers.parseEther("50");
+    await interfaces.cxbt.addToRewardPool(rewardAmount);
+
+    // Проверяем баланс пула наград
+    expect(await interfaces.cxbt.getRewardPoolBalance()).to.equal(rewardAmount);
+
+    // Владелец разблокирует токены addr1
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+
+    // Баланс пула наград не изменился
+    expect(await interfaces.cxbt.getRewardPoolBalance()).to.equal(rewardAmount);
+
+    // Токены разблокированы без награды
+    const [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(UNLOCK_AMOUNT);
+    expect(total).to.equal(MINT_AMOUNT);
+  });
+
+  it("Должен emit событие TokensUnlockedByOwner", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    await expect(interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT))
+      .to.emit(interfaces.cxbt, "TokensUnlockedByOwner")
+      .withArgs(owner.address, addr1.address, UNLOCK_AMOUNT);
+  });
+
+  it("Владелец может разблокировать токены для нескольких пользователей", async function () {
+    // Минтим токены addr1 и addr2
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+    await interfaces.cxbt.mint(addr2.address, MINT_AMOUNT);
+
+    // Владелец разблокирует токены для обоих
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+    await interfaces.cxbt.ownerUnlockTokens(addr2.address, UNLOCK_AMOUNT);
+
+    // Проверяем, что токены разблокированы для обоих
+    const [unlocked1, locked1, total1] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    const [unlocked2, locked2, total2] = await interfaces.cxbt.getTokenBalances(addr2.address);
+    
+    expect(unlocked1).to.equal(UNLOCK_AMOUNT);
+    expect(unlocked2).to.equal(UNLOCK_AMOUNT);
+  });
+
+  it("Разблокировка владельцем должна работать при паузе", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Ставим контракт на паузу
+    await interfaces.cxbt.pause();
+
+    // Владелец все еще может разблокировать токены
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+
+    // Проверяем, что токены разблокированы
+    const [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(UNLOCK_AMOUNT);
+  });
+
+  it("Разблокировка владельцем должна работать даже если пользователь в черном списке", async function () {
+    // Минтим токены addr1
+    await interfaces.cxbt.mint(addr1.address, MINT_AMOUNT);
+
+    // Добавляем addr1 в черный список
+    await interfaces.cxbt.addToBlacklist(addr1.address);
+
+    // Владелец все еще может разблокировать токены
+    await interfaces.cxbt.ownerUnlockTokens(addr1.address, UNLOCK_AMOUNT);
+
+    // Проверяем, что токены разблокированы
+    const [unlocked, locked, total] = await interfaces.cxbt.getTokenBalances(addr1.address);
+    expect(unlocked).to.equal(UNLOCK_AMOUNT);
   });
 });
 

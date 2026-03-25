@@ -566,8 +566,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/facets/CXBTFacet.sol": {
-      "lastModificationDate": 1774375363659,
-      "contentHash": "cad605848720c62eab102735f259af75",
+      "lastModificationDate": 1774415705053,
+      "contentHash": "b553072f6e35cf9d0195b420b481c663",
       "sourceName": "contracts/facets/CXBTFacet.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -608,8 +608,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/interfaces/ICXBTFacet.sol": {
-      "lastModificationDate": 1774377618395,
-      "contentHash": "5b3439bcc7dcbed4c4b156306eaeeef6",
+      "lastModificationDate": 1774415685182,
+      "contentHash": "156fb52231a4024dfaf2a0fc8581bdf6",
       "sourceName": "contracts/interfaces/ICXBTFacet.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -911,8 +911,8 @@
       ]
     },
     "/home/bgrusnak/Projects/CXB/cxbt-new/contracts/facets/ERC20Facet.sol": {
-      "lastModificationDate": 1774377415029,
-      "contentHash": "574ae2bb9f0e7c2dcfb380be6f0f2f0c",
+      "lastModificationDate": 1774386244638,
+      "contentHash": "b1e01425afe4492ba9e5365f6f4f7306",
       "sourceName": "contracts/facets/ERC20Facet.sol",
       "solcConfig": {
         "version": "0.8.27",
