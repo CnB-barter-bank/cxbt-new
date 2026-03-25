@@ -1,52 +1,65 @@
 const hre = require("hardhat");
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
 
 async function main() {
-  // Получаем аккаунт деплоера (первый аккаунт в сети)
-  const [deployer] = await hre.ethers.getSigners();
+  // Проверяем наличие необходимых переменных окружения
+  if (!process.env.DEPLOYER_PRIVATE_KEY) {
+    throw new Error("DEPLOYER_PRIVATE_KEY не установлен в .env файле");
+  }
+
+  // Создаем signer из приватного ключа
+  const deployer = new hre.ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, hre.ethers.provider);
 
   console.log("Развертывание Diamond Proxy с аккаунта:", deployer.address);
   console.log("Баланс деплоера:", (await hre.ethers.provider.getBalance(deployer.address)).toString());
 
-  // Параметры токена
-  const tokenName = "CXBT";
-  const tokenSymbol = "CXBT";
-  const tokenDecimals = 18;
-  const initialSupply = hre.ethers.parseUnits("1000000", 18); // 1,000,000 токенов
+  // Параметры токена из .env
+  const tokenName = process.env.TOKEN_NAME || "CXBT";
+  const tokenSymbol = process.env.TOKEN_SYMBOL || "CXBT";
+  const tokenDecimals = parseInt(process.env.TOKEN_DECIMALS || "6");
+  const initialSupply = hre.ethers.parseUnits(process.env.INITIAL_SUPPLY || "10000000", tokenDecimals);
 
-  // Параметры CXBT
-  const unlockPercentage = 1000; // 10% в базисных пунктах (10000 = 100%)
-  
-  // Для тестов используем MockPAID, для продакшена нужно передать реальный адрес PAID
-  let paidTokenAddress;
+  // Параметры CXBT из .env
+  const unlockPercentage = parseInt(process.env.UNLOCK_PERCENTAGE || "1000");
+
+  // Адрес платежного контракта из .env
+  let paidTokenAddress = process.env.PAID_TOKEN_ADDRESS;
+
+  // Для тестов используем MockEURC, если адрес не указан или это тестовая сеть
   if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
-    console.log("\nРазвертывание MockPAID для тестирования...");
-    const MockPAID = await hre.ethers.getContractFactory("MockPAID");
-    const mockPAID = await MockPAID.deploy();
-    await mockPAID.waitForDeployment();
-    paidTokenAddress = await mockPAID.getAddress();
-    console.log("MockPAID развернут по адресу:", paidTokenAddress);
+    if (!paidTokenAddress || paidTokenAddress === "0x0000000000000000000000000000000000000000") {
+      console.log("\nРазвертывание MockEURC для тестирования...");
+      const MockEURC = await hre.ethers.getContractFactory("MockEURC");
+      const mockEURC = await MockEURC.deploy();
+      await mockEURC.waitForDeployment();
+      paidTokenAddress = await mockEURC.getAddress();
+      console.log("MockEURC развернут по адресу:", paidTokenAddress);
+    }
   } else {
-    // Для продакшена нужно передать реальный адрес PAID
-    paidTokenAddress = "0x0000000000000000000000000000000000000000"; // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ АДРЕС
-    console.log("\n⚠️  ВНИМАНИЕ: PAID токен не указан. Установите paidTokenAddress для продакшена!");
+    // Для продакшена проверяем, что адрес указан
+    if (!paidTokenAddress || paidTokenAddress === "0x0000000000000000000000000000000000000000") {
+      throw new Error("PAID_TOKEN_ADDRESS не установлен в .env файле для продакшен сети!");
+    }
   }
 
   console.log("\n--- Параметры деплоя ---");
   console.log("Название токена:", tokenName);
   console.log("Символ токена:", tokenSymbol);
   console.log("Десятичные знаки:", tokenDecimals);
-  console.log("Начальное количество токенов:", hre.ethers.formatUnits(initialSupply, 18));
+  console.log("Начальное количество токенов:", hre.ethers.formatUnits(initialSupply, tokenDecimals));
   console.log("Процент разблокировки:", unlockPercentage / 100, "%");
   console.log("PAID токен:", paidTokenAddress);
 
   // ==================== Шаг 1: Развертывание Facets ====================
-  
+
   console.log("\n--- Развертывание Facets ---");
 
   // a. Развертываем DiamondCutFacet
   console.log("\na. Развертывание DiamondCutFacet...");
   const DiamondCutFacet = await hre.ethers.getContractFactory("DiamondCutFacet");
-  const diamondCutFacet = await DiamondCutFacet.deploy();
+  const diamondCutFacet = await DiamondCutFacet.connect(deployer).deploy();
   await diamondCutFacet.waitForDeployment();
   const diamondCutFacetAddress = await diamondCutFacet.getAddress();
   console.log("   DiamondCutFacet развернут по адресу:", diamondCutFacetAddress);
@@ -54,7 +67,7 @@ async function main() {
   // b. Развертываем DiamondLoupeFacet
   console.log("\nb. Развертывание DiamondLoupeFacet...");
   const DiamondLoupeFacet = await hre.ethers.getContractFactory("DiamondLoupeFacet");
-  const diamondLoupeFacet = await DiamondLoupeFacet.deploy();
+  const diamondLoupeFacet = await DiamondLoupeFacet.connect(deployer).deploy();
   await diamondLoupeFacet.waitForDeployment();
   const diamondLoupeFacetAddress = await diamondLoupeFacet.getAddress();
   console.log("   DiamondLoupeFacet развернут по адресу:", diamondLoupeFacetAddress);
@@ -62,7 +75,7 @@ async function main() {
   // c. Развертываем OwnershipFacet
   console.log("\nc. Развертывание OwnershipFacet...");
   const OwnershipFacet = await hre.ethers.getContractFactory("OwnershipFacet");
-  const ownershipFacet = await OwnershipFacet.deploy();
+  const ownershipFacet = await OwnershipFacet.connect(deployer).deploy();
   await ownershipFacet.waitForDeployment();
   const ownershipFacetAddress = await ownershipFacet.getAddress();
   console.log("   OwnershipFacet развернут по адресу:", ownershipFacetAddress);
@@ -70,7 +83,7 @@ async function main() {
   // d. Развертываем ERC20Facet
   console.log("\nd. Развертывание ERC20Facet...");
   const ERC20Facet = await hre.ethers.getContractFactory("ERC20Facet");
-  const erc20Facet = await ERC20Facet.deploy();
+  const erc20Facet = await ERC20Facet.connect(deployer).deploy();
   await erc20Facet.waitForDeployment();
   const erc20FacetAddress = await erc20Facet.getAddress();
   console.log("   ERC20Facet развернут по адресу:", erc20FacetAddress);
@@ -78,19 +91,19 @@ async function main() {
   // e. Развертываем CXBTFacet
   console.log("\ne. Развертывание CXBTFacet...");
   const CXBTFacet = await hre.ethers.getContractFactory("CXBTFacet");
-  const cxbtFacet = await CXBTFacet.deploy();
+  const cxbtFacet = await CXBTFacet.connect(deployer).deploy();
   await cxbtFacet.waitForDeployment();
   const cxbtFacetAddress = await cxbtFacet.getAddress();
   console.log("   CXBTFacet развернут по адресу:", cxbtFacetAddress);
 
   // ==================== Шаг 2: Развертывание Diamond ====================
-  
+
   console.log("\n--- Развертывание Diamond (Proxy) ---");
 
   // f. Развертываем Diamond контракт (прокси)
   console.log("\nf. Развертывание Diamond контракта...");
   const Diamond = await hre.ethers.getContractFactory("Diamond");
-  const diamond = await Diamond.deploy(
+  const diamond = await Diamond.connect(deployer).deploy(
     deployer.address,      // _contractOwner
     diamondCutFacetAddress, // _diamondCutFacet
     diamondLoupeFacetAddress // _diamondLoupeFacet
@@ -100,12 +113,12 @@ async function main() {
   console.log("   Diamond развернут по адресу:", diamondAddress);
 
   // ==================== Шаг 3: Добавление Facets к Diamond ====================
-  
+
   console.log("\n--- Добавление Facets к Diamond ---");
 
   // Создаем интерфейсы для работы с Diamond
   const diamondCutFacetContract = await hre.ethers.getContractAt("IDiamondCut", diamondAddress);
-  
+
   // Получаем селекторы функций для каждого facet
   console.log("\nПолучение селекторов функций...");
 
@@ -163,7 +176,7 @@ async function main() {
     functionSelectors: ownershipSelectors
   }];
 
-  await diamondCutFacetContract.diamondCut(ownershipCut, hre.ethers.ZeroAddress, "0x");
+  await diamondCutFacetContract.connect(deployer).diamondCut(ownershipCut, hre.ethers.ZeroAddress, "0x");
   console.log("   ✓ OwnershipFacet добавлен");
 
   // Добавляем ERC20Facet
@@ -174,7 +187,7 @@ async function main() {
     functionSelectors: erc20Selectors
   }];
 
-  await diamondCutFacetContract.diamondCut(erc20Cut, hre.ethers.ZeroAddress, "0x");
+  await diamondCutFacetContract.connect(deployer).diamondCut(erc20Cut, hre.ethers.ZeroAddress, "0x");
   console.log("   ✓ ERC20Facet добавлен");
 
   // Добавляем CXBTFacet
@@ -185,11 +198,11 @@ async function main() {
     functionSelectors: cxbtSelectors
   }];
 
-  await diamondCutFacetContract.diamondCut(cxbtCut, hre.ethers.ZeroAddress, "0x");
+  await diamondCutFacetContract.connect(deployer).diamondCut(cxbtCut, hre.ethers.ZeroAddress, "0x");
   console.log("   ✓ CXBTFacet добавлен");
 
   // ==================== Шаг 4: Инициализация Facets ====================
-  
+
   console.log("\n--- Инициализация Facets ---");
 
   // Создаем интерфейсы для вызова функций через Diamond
@@ -201,7 +214,7 @@ async function main() {
 
   // Инициализируем ERC20Facet
   console.log("   Инициализация ERC20Facet...");
-  await erc20FacetInterface.initERC20(
+  await erc20FacetInterface.connect(deployer).initERC20(
     tokenName,
     tokenSymbol,
     tokenDecimals,
@@ -211,14 +224,52 @@ async function main() {
 
   // Инициализируем CXBTFacet
   console.log("   Инициализация CXBTFacet...");
-  await cxbtFacetInterface.initCXBT(
+  await cxbtFacetInterface.connect(deployer).initCXBT(
     paidTokenAddress,
     unlockPercentage
   );
   console.log("   ✓ CXBTFacet инициализирован");
 
-  // ==================== Шаг 5: Вывод адресов и верификация ====================
-  
+  // ==================== Шаг 5: Сохранение адреса Diamond в JSON файл ====================
+
+  console.log("\n--- Сохранение адреса Diamond ---");
+
+  const deploymentInfo = {
+    network: hre.network.name,
+    chainId: (await hre.ethers.provider.getNetwork()).chainId.toString(),
+    diamondAddress: diamondAddress,
+    deployer: deployer.address,
+    facets: {
+      DiamondCutFacet: diamondCutFacetAddress,
+      DiamondLoupeFacet: diamondLoupeFacetAddress,
+      OwnershipFacet: ownershipFacetAddress,
+      ERC20Facet: erc20FacetAddress,
+      CXBTFacet: cxbtFacetAddress
+    },
+    token: {
+      name: tokenName,
+      symbol: tokenSymbol,
+      decimals: tokenDecimals,
+      initialSupply: initialSupply.toString()
+    },
+    paidToken: paidTokenAddress,
+    unlockPercentage: unlockPercentage,
+    deployedAt: new Date().toISOString()
+  };
+
+  // Создаем директорию deployments если её нет
+  const deploymentsDir = path.join(__dirname, "..", "deployments");
+  if (!fs.existsSync(deploymentsDir)) {
+    fs.mkdirSync(deploymentsDir, { recursive: true });
+  }
+
+  // Сохраняем в файл
+  const deploymentFile = path.join(deploymentsDir, `${hre.network.name}.json`);
+  fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
+  console.log("   ✓ Информация о деплое сохранена в:", deploymentFile);
+
+  // ==================== Шаг 6: Вывод адресов и верификация ====================
+
   console.log("\n--- Адреса всех развернутых контрактов ---");
   console.log("DiamondCutFacet:   ", diamondCutFacetAddress);
   console.log("DiamondLoupeFacet: ", diamondLoupeFacetAddress);
@@ -238,8 +289,8 @@ async function main() {
   console.log("Название:", name);
   console.log("Символ:", symbol);
   console.log("Десятичные знаки:", decimals);
-  console.log("Общее количество токенов:", hre.ethers.formatUnits(totalSupply, 18));
-  console.log("Баланс деплоера:", hre.ethers.formatUnits(deployerBalance, 18));
+  console.log("Общее количество токенов:", hre.ethers.formatUnits(totalSupply, tokenDecimals));
+  console.log("Баланс деплоера:", hre.ethers.formatUnits(deployerBalance, tokenDecimals));
 
   // Проверка состояния CXBT
   console.log("\n--- Проверка состояния CXBT ---");
@@ -251,8 +302,8 @@ async function main() {
   console.log("Процент разблокировки:", unlockPct / 100, "%");
   console.log("На паузе:", paused);
 
-  // ==================== Шаг 6: Верификация Facets через DiamondLoupe ====================
-  
+  // ==================== Шаг 7: Верификация Facets через DiamondLoupe ====================
+
   console.log("\n--- Верификация Facets через DiamondLoupe ---");
 
   const diamondLoupe = await hre.ethers.getContractAt("IDiamondLoupe", diamondAddress);
@@ -266,7 +317,7 @@ async function main() {
     console.log(`\nFacet #${i + 1}:`);
     console.log("  Адрес:", facet.facetAddress);
     console.log("  Количество функций:", facet.functionSelectors.length);
-    
+
     // Определяем имя facet по адресу
     let facetName = "Unknown";
     if (facet.facetAddress.toLowerCase() === diamondCutFacetAddress.toLowerCase()) {
