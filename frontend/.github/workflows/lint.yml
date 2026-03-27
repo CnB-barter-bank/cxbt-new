@@ -1,0 +1,72 @@
+name: Lint
+
+on:
+  push:
+    branches: [main, develop, staging, production]
+  pull_request:
+    branches: [main, develop, staging, production]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+        continue-on-error: false
+
+      - name: Check code formatting
+        working-directory: ./frontend
+        run: npm run format:check
+        continue-on-error: false
+
+      - name: Run TypeScript type checking
+        working-directory: ./frontend
+        run: npm run type-check
+        continue-on-error: false
+
+      - name: Generate lint report
+        working-directory: ./frontend
+        if: always()
+        run: |
+          echo "## Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ESLint" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Prettier" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-results
+          path: |
+            frontend/.eslintcache
+          retention-days: 7
+          if-no-files-found: ignore

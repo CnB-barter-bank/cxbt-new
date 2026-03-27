@@ -1,0 +1,130 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test:ci
+
+      - name: Run linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Build application
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: frontend/dist/spa
+          retention-days: 7
+
+      - name: Deploy to production
+        id: deploy
+        if: github.ref == 'refs/heads/production' || github.event.inputs.environment == 'production'
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment commands here
+          # Example: aws s3 sync frontend/dist/spa s3://your-bucket --delete
+          echo "url=https://your-production-domain.com" >> $GITHUB_OUTPUT
+
+      - name: Deploy to staging
+        id: deploy-staging
+        if: github.event.inputs.environment == 'staging'
+        run: |
+          echo "Deploying to staging..."
+          # Add your staging deployment commands here
+          echo "url=https://your-staging-domain.com" >> $GITHUB_OUTPUT
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi
+
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build preview
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NODE_ENV: preview
+
+      - name: Deploy preview
+        run: |
+          echo "Deploying preview for PR #${{ github.event.pull_request.number }}"
+          # Add your preview deployment commands here
+          # Example: netlify deploy --dir=frontend/dist/spa --alias=pr-${{ github.event.pull_request.number }}
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Preview deployment ready!\n\nPreview URL: https://preview-url-for-pr-${{ github.event.pull_request.number }}.example.com'
+            })

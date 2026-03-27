@@ -1,0 +1,310 @@
+// App Global CSS
+// https://v2.quasar.dev/quasar-vite-style-guide/#add-variables-in-scss
+
+// Don't remove the following line
+@import 'quasar/src/css/variables.sass';
+
+// App Variables
+// ----------------------------------
+$primary: #1976d2;
+$secondary: #26a69a;
+$accent: #9c27b0;
+$positive: #21ba45;
+$negative: #c10015;
+$info: #31ccec;
+$warning: #f2c037;
+
+// Custom Colors
+$cxbt-primary: #1976d2;
+$cxbt-secondary: #26a69a;
+$cxbt-dark: #1a237e;
+$cxbt-light: #e3f2fd;
+
+// App Styles
+// ----------------------------------
+
+// Page styles
+.q-page {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  min-height: 100vh;
+}
+
+// Card styles
+.q-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+}
+
+// Card section styles
+.q-card-section {
+  &.bg-primary,
+  &.bg-secondary,
+  &.bg-accent {
+    padding: 20px 24px;
+  }
+}
+
+// Button styles
+.q-btn {
+  border-radius: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+
+  &.btn-primary {
+    background: linear-gradient(135deg, $cxbt-primary 0%, $cxbt-dark 100%);
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+
+    &:hover {
+      box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-secondary {
+    background: linear-gradient(135deg, $cxbt-secondary 0%, #00897b 100%);
+    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+
+    &:hover {
+      box-shadow: 0 6px 20px rgba(38, 166, 154, 0.4);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Input styles
+.q-field--outlined .q-field__control {
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: $cxbt-primary;
+  }
+}
+
+.q-field--outlined.q-field--focused .q-field__control {
+  border-color: $cxbt-primary;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+// Chip styles
+.q-chip {
+  border-radius: 20px;
+  font-weight: 500;
+  padding: 4px 12px;
+
+  &.q-chip--dense {
+    border-radius: 16px;
+  }
+}
+
+// Avatar styles
+.q-avatar {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+// Banner styles
+.q-banner {
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  &.bg-positive {
+    background: linear-gradient(135deg, #21ba45 0%, #16a34a 100%);
+  }
+
+  &.bg-negative {
+    background: linear-gradient(135deg, #c10015 0%, #991b1b 100%);
+  }
+
+  &.bg-warning {
+    background: linear-gradient(135deg, #f2c037 0%, #eab308 100%);
+  }
+}
+
+// Header styles
+.q-header {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  &.bg-primary {
+    background: linear-gradient(135deg, $cxbt-primary 0%, $cxbt-dark 100%);
+  }
+}
+
+.q-toolbar {
+  padding: 12px 24px;
+
+  .q-toolbar-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+}
+
+// List styles
+.q-list {
+  border-radius: 12px;
+  overflow: hidden;
+
+  .q-item {
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(25, 118, 210, 0.05);
+    }
+  }
+}
+
+// Dialog styles
+.q-dialog {
+  .q-card {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+}
+
+// Loading styles
+.q-spinner {
+  color: $cxbt-primary;
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+// Responsive Design
+@media (max-width: $breakpoint-xs-max) {
+  .q-page {
+    padding: 8px;
+  }
+
+  .q-card {
+    border-radius: 12px;
+  }
+
+  .q-card-section {
+    padding: 16px;
+  }
+
+  .q-toolbar {
+    padding: 8px 16px;
+  }
+
+  .q-btn {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: $breakpoint-sm-max) {
+  .q-page {
+    padding: 12px;
+  }
+}
+
+// Custom utility classes
+.text-gradient {
+  background: linear-gradient(135deg, $cxbt-primary 0%, $cxbt-secondary 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, $cxbt-primary 0%, $cxbt-dark 100%);
+}
+
+.bg-gradient-secondary {
+  background: linear-gradient(135deg, $cxbt-secondary 0%, #00897b 100%);
+}
+
+.shadow-sm {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-md {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-lg {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+// Token specific styles
+.token-balances {
+  .q-avatar {
+    background: linear-gradient(135deg, $cxbt-primary 0%, $cxbt-dark 100%);
+  }
+}
+
+.unlock-tokens,
+.transfer-tokens {
+  .q-card-section {
+    &:first-child {
+      background: linear-gradient(135deg, $cxbt-secondary 0%, #00897b 100%);
+    }
+  }
+}
+
+// Wallet connect specific styles
+.wallet-connect {
+  .q-chip {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Language selector specific styles
+.language-selector {
+  .q-btn-dropdown {
+    border-radius: 20px;
+  }
+}
