@@ -203,6 +203,7 @@ export function useWalletConnect() {
   
   const balance = ref('0')
   const isConnecting = ref(false)
+  const isWalletDialogOpen = ref(false)
 
   // Флаг для предотвращения повторных автоматических открытий
   const hasAutoOpened = ref(false)
@@ -459,6 +460,7 @@ export function useWalletConnect() {
   const connect = async () => {
     try {
       isConnecting.value = true
+      isWalletDialogOpen.value = true
       await open()
       
       // Проверяем и переключаем на Base после подключения
@@ -473,6 +475,7 @@ export function useWalletConnect() {
       throw error
     } finally {
       isConnecting.value = false
+      // Закрытие диалога происходит через событие onClose модального окна
     }
   }
 
@@ -481,6 +484,7 @@ export function useWalletConnect() {
     try {
       const modal = getWeb3Modal()
       modal.close()
+      isWalletDialogOpen.value = false
     } catch (error) {
       console.error('Ошибка отключения от кошелька:', error)
       throw error
@@ -535,6 +539,7 @@ export function useWalletConnect() {
     balance,
     isConnecting,
     isBaseNetwork,
+    isWalletDialogOpen,
   }
 }
 

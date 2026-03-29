@@ -3,6 +3,9 @@ import { readContract, writeContract, simulateContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
 import { Notify } from 'quasar'
 
+// Кэш для хранения результатов calculateUnlockCost
+const unlockCostCache = new Map()
+
 /**
  * Безопасно логирует объект ошибки, конвертируя BigInt в строки
  * @param {Error} err - Объект ошибки
@@ -165,26 +168,77 @@ export function useTokenUnlock() {
       return 0n
     }
 
+    // Проверка кэша
+    const cacheKey = unlockAmount.toString()
+    if (unlockCostCache.has(cacheKey)) {
+      console.log('[useTokenUnlock] Результат найден в кэше:', cacheKey)
+      return unlockCostCache.get(cacheKey)
+    }
+
     isLoading.value = true
     error.value = null
 
+    // Функция для выполнения запроса с retry логикой
+    const fetchWithRetry = async (retryCount = 0, maxRetries = 3) => {
+      try {
+        console.log('[useTokenUnlock] Вызываем calculateUnlockCost из контракта:', cxbtAddress)
+        
+        const cost = await readContract(wagmiConfig, {
+          address: cxbtAddress,
+          abi: cxbtAbi,
+          functionName: 'calculateUnlockCost',
+          args: [unlockAmount]
+        })
+        
+        console.log('[useTokenUnlock] Результат calculateUnlockCost:', cost?.toString())
+        
+        // Сохранение в кэш
+        unlockCostCache.set(cacheKey, cost)
+        console.log('[useTokenUnlock] Результат сохранён в кэш:', cacheKey)
+        
+        return cost
+      } catch (err) {
+        console.error('[useTokenUnlock] Ошибка расчёта стоимости разблокировки:', safeLogError(err))
+        
+        // Проверка на rate limiting (429)
+        const isRateLimitError =
+          err.message?.includes('429') ||
+          err.message?.toLowerCase().includes('rate limit') ||
+          err.message?.toLowerCase().includes('too many requests') ||
+          err.code === 429
+        
+        if (isRateLimitError && retryCount < maxRetries) {
+          const delayMs = Math.pow(2, retryCount) * 1000 // Экспоненциальная задержка: 1s, 2s, 4s
+          console.log(`[useTokenUnlock] Rate limit detected. Retry ${retryCount + 1}/${maxRetries} через ${delayMs}ms`)
+          
+          Notify.create({
+            type: 'warning',
+            message: 'Превышен лимит запросов к сети. Пожалуйста, подождите немного.',
+            timeout: 3000,
+            position: 'top'
+          })
+          
+          // Ожидание перед повторной попыткой
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+          return fetchWithRetry(retryCount + 1, maxRetries)
+        }
+        
+        if (isRateLimitError) {
+          Notify.create({
+            type: 'negative',
+            message: 'Превышен лимит запросов к сети. Пожалуйста, попробуйте позже.',
+            timeout: 5000,
+            position: 'top'
+          })
+        }
+        
+        error.value = `Ошибка расчёта стоимости разблокировки: ${err.message}`
+        throw err
+      }
+    }
+
     try {
-      console.log('[useTokenUnlock] Вызываем calculateUnlockCost из контракта:', cxbtAddress)
-      
-      const cost = await readContract(wagmiConfig, {
-        address: cxbtAddress,
-        abi: cxbtAbi,
-        functionName: 'calculateUnlockCost',
-        args: [unlockAmount]
-      })
-      
-      console.log('[useTokenUnlock] Результат calculateUnlockCost:', cost?.toString())
-      
-      return cost
-    } catch (err) {
-      console.error('[useTokenUnlock] Ошибка расчёта стоимости разблокировки:', safeLogError(err))
-      error.value = `Ошибка расчёта стоимости разблокировки: ${err.message}`
-      throw err
+      return await fetchWithRetry()
     } finally {
       isLoading.value = false
     }

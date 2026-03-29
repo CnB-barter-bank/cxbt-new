@@ -5,12 +5,12 @@
       <div class="text-center q-mb-xl">
         <h1 class="text-h4 text-weight-bold text-primary q-mb-sm">{{ i18nStore.t('page.title') }}</h1>
         <p class="text-subtitle1 text-grey-7">
-          {{ i18nStore.t('page.subtitle', { paidToken: paidTokenSymbol || 'PAID', workToken: workTokenSymbol || 'WORK' }) }}
+          {{ i18nStore.t('page.subtitle', { paidToken: paidTokenSymbol || 'PAID', workToken: workTokenSymbol || 'CXBT' }) }}
         </p>
       </div>
 
-      <!-- Секция балансов токенов (показывается только при подключенном кошельке) -->
-      <div v-if="wallet.isConnected" class="balances-section">
+      <!-- Секция балансов токенов (показывается только при подключенном кошельке и закрытом диалоге) -->
+      <div v-if="wallet.isConnected && !isWalletDialogOpen" class="balances-section">
         <div class="row items-center justify-between q-mb-md">
           <h2 class="text-h5 text-weight-medium q-ma-none">{{ i18nStore.t('balances.title') }}</h2>
           <q-btn
@@ -83,7 +83,7 @@
                 <div class="text-h4 text-weight-bold text-positive">
                   {{ formatBalance(wallet.formattedWorkBalance) }}
                 </div>
-                <div class="text-caption text-grey-6 q-mt-xs">{{ workTokenSymbol || 'WORK' }}</div>
+                <div class="text-caption text-grey-6 q-mt-xs">{{ workTokenSymbol || 'CXBT' }}</div>
               </q-card-section>
             </q-card>
           </div>
@@ -136,7 +136,7 @@
                         val => val > 0 || i18nStore.t('unlock.amountMustBePositive'),
                         val => val <= parseFloat(wallet.formattedLockedTokens) || i18nStore.t('unlock.insufficientLocked')
                       ]"
-                      @update:model-value="handleUnlockAmountChange"
+                      @update:model-value="debouncedHandleUnlockAmountChange"
                     >
                       <template v-slot:append>
                         <span class="text-grey-7">{{ workTokenSymbol || 'WORK' }}</span>
@@ -251,10 +251,11 @@
 import { useI18nStore } from 'stores/i18n'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useWalletStore } from '../stores/wallet'
+import { useWalletConnect } from '../composables/useWalletConnect'
 import { useTokenBalances } from '../composables/useTokenBalances'
 import { useTokenUnlock } from '../composables/useTokenUnlock'
 import { useTokenTransfer } from '../composables/useTokenTransfer'
-import { Notify } from 'quasar'
+import { Notify, debounce } from 'quasar'
 
 const i18nStore = useI18nStore()
 
@@ -277,6 +278,9 @@ const safeLogError = (err) => {
 
 // Получаем wallet store
 const wallet = useWalletStore()
+
+// Получаем флаг состояния диалога кошелька
+const { isWalletDialogOpen } = useWalletConnect()
 
 // Используем composable для получения балансов
 const {
@@ -323,7 +327,7 @@ const transferSuccess = ref(false)
 
 // Вычисляемые свойства для форматирования значений
 const formattedUnlockPercentage = computed(() => {
-  const percentage = Number(unlockPercentage.value) / 100
+  const percentage = Number(unlockPercentage.value) / 10000
   return percentage.toFixed(2)
 })
 
@@ -377,6 +381,9 @@ const handleUnlockAmountChange = async (value) => {
     unlockCost.value = 0n
   }
 }
+
+// Debounced версия для уменьшения количества RPC запросов
+const debouncedHandleUnlockAmountChange = debounce(handleUnlockAmountChange, 500)
 
 // Обработчик кнопки разблокировки
 const handleUnlock = async () => {

@@ -112,7 +112,6 @@ async function handleWalletClick() {
     // If connected, disconnect
     console.log('[Header] Disconnecting wallet...')
     await disconnect()
-    walletStore.disconnect()
   } else {
     // If not connected, connect
     console.log('[Header] Connecting wallet...')

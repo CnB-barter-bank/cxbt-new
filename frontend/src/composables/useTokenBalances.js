@@ -2,7 +2,7 @@ import { ref, computed, watch } from 'vue'
 import { readContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
 
-// ABI для ERC20 токена (функции name, symbol, balanceOf, decimals)
+// ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
   {
     inputs: [],
@@ -26,6 +26,13 @@ const erc20Abi = [
     type: 'function'
   },
   {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'unlockedBalanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
     inputs: [],
     name: 'decimals',
     outputs: [{ name: '', type: 'uint8' }],
@@ -44,6 +51,17 @@ const diamondAbi = [
       { internalType: 'uint256', name: 'locked', type: 'uint256' },
       { internalType: 'uint256', name: 'total', type: 'uint256' }
     ],
+    stateMutability: 'view',
+    type: 'function'
+  }
+]
+
+// ABI для CXBTFacet (функция getPaidToken)
+const cxbtAbi = [
+  {
+    inputs: [],
+    name: 'getPaidToken',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function'
   }
@@ -73,19 +91,19 @@ export function useTokenBalances(address) {
   const error = ref(null)
 
   // Получаем адреса контрактов из переменных окружения
-  const paidTokenAddress = import.meta.env.VITE_PAID_TOKEN_ADDRESS
   const workTokenAddress = import.meta.env.VITE_WORK_TOKEN_ADDRESS
   const diamondAddress = import.meta.env.VITE_DIAMOND_ADDRESS
+  const paidTokenAddress = ref(null)
 
   // Логируем адреса контрактов из переменных окружения для отладки
   console.log('[useTokenBalances] Переменные окружения:')
-  console.log('  - VITE_PAID_TOKEN_ADDRESS:', paidTokenAddress)
   console.log('  - VITE_WORK_TOKEN_ADDRESS:', workTokenAddress)
   console.log('  - VITE_DIAMOND_ADDRESS:', diamondAddress)
 
   // Проверяем, что все адреса контрактов настроены
+  // paidTokenAddress может быть null, он будет получен динамически из контракта
   const isConfigured = computed(() => {
-    const configured = !!paidTokenAddress && !!workTokenAddress && !!diamondAddress
+    const configured = !!workTokenAddress && !!diamondAddress
     console.log('[useTokenBalances] isConfigured:', configured)
     return configured
   })
@@ -106,26 +124,73 @@ export function useTokenBalances(address) {
     }
   }
 
+  // Функция для получения разблокированного баланса ERC20 токена (unlockedBalanceOf)
+  const getUnlockedBalance = async (tokenAddress, userAddress) => {
+    try {
+      const balance = await readContract(wagmiConfig, {
+        address: tokenAddress,
+        abi: erc20Abi,
+        functionName: 'unlockedBalanceOf',
+        args: [userAddress]
+      })
+      return balance
+    } catch (err) {
+      console.error(`[useTokenBalances] Ошибка получения разблокированного баланса токена ${tokenAddress}:`, err)
+      throw err
+    }
+  }
+
+  // Функция для получения адреса PAID токена из Diamond контракта
+  const getPaidTokenAddress = async () => {
+    try {
+      const address = await readContract(wagmiConfig, {
+        address: workTokenAddress,
+        abi: cxbtAbi,
+        functionName: 'getPaidToken'
+      })
+      return address
+    } catch (err) {
+      console.error('[useTokenBalances] Ошибка получения адреса PAID токена:', err)
+      throw err
+    }
+  }
+
   // Функция для получения балансов из Diamond контракта
   const getDiamondBalances = async (userAddress) => {
     try {
       console.log('[useTokenBalances] Вызываем getTokenBalances из Diamond контракта')
-      console.log('  - diamondAddress:', diamondAddress)
+      console.log('  - workTokenAddress:', workTokenAddress)
       console.log('  - userAddress:', userAddress)
       
       const balances = await readContract(wagmiConfig, {
-        address: diamondAddress,
+        address: workTokenAddress,
         abi: diamondAbi,
         functionName: 'getTokenBalances',
         args: [userAddress]
       })
       
       console.log('[useTokenBalances] Результат getTokenBalances:', balances)
-      console.log('  - unlocked:', balances?.unlocked?.toString())
-      console.log('  - locked:', balances?.locked?.toString())
-      console.log('  - total:', balances?.total?.toString())
+      console.log('  - Тип результата:', Array.isArray(balances) ? 'Array' : typeof balances)
       
-      return balances
+      // Обработка случая, когда возвращается массив вместо объекта
+      let normalizedBalances
+      if (Array.isArray(balances)) {
+        console.log('[useTokenBalances] Результат - массив, преобразуем в объект')
+        normalizedBalances = {
+          unlocked: balances[0] || 0n,
+          locked: balances[1] || 0n,
+          total: balances[2] || 0n
+        }
+      } else {
+        normalizedBalances = balances
+      }
+      
+      console.log('[useTokenBalances] Нормализованные балансы:')
+      console.log('  - unlocked:', normalizedBalances?.unlocked?.toString())
+      console.log('  - locked:', normalizedBalances?.locked?.toString())
+      console.log('  - total:', normalizedBalances?.total?.toString())
+      
+      return normalizedBalances
     } catch (err) {
       console.error('[useTokenBalances] Ошибка получения балансов из Diamond:', err)
       console.error('[useTokenBalances] Stack trace:', err.stack)
@@ -185,7 +250,6 @@ export function useTokenBalances(address) {
     if (!currentAddress || !isConfigured.value) {
       if (!isConfigured.value) {
         console.warn('[useTokenBalances] Адреса контрактов не настроены. Проверьте переменные окружения:')
-        console.warn('  - VITE_PAID_TOKEN_ADDRESS')
         console.warn('  - VITE_WORK_TOKEN_ADDRESS')
         console.warn('  - VITE_DIAMOND_ADDRESS')
       }
@@ -198,10 +262,28 @@ export function useTokenBalances(address) {
     try {
       console.log('[useTokenBalances] Начинаем получать балансы и метаданные...')
       
+      // Получаем адрес PAID токена из контракта WORK токена
+      if (!paidTokenAddress.value) {
+        try {
+          paidTokenAddress.value = await getPaidTokenAddress()
+          console.log('[useTokenBalances] Получен адрес PAID токена из контракта:', paidTokenAddress.value)
+        } catch (err) {
+          console.error('[useTokenBalances] Не удалось получить адрес PAID токена из контракта:', err)
+          throw err
+        }
+      }
+
+      // Логируем адреса контрактов для диагностики
+      console.log('[useTokenBalances] Используемые адреса контрактов:')
+      console.log('  - workTokenAddress:', workTokenAddress)
+      console.log('  - diamondAddress:', diamondAddress)
+      console.log('  - paidTokenAddress:', paidTokenAddress.value)
+      
       // Параллельно получаем все балансы и метаданные токенов
+      // Используем workTokenAddress для всех чтений из контракта
       const [paid, work, diamondBalances] = await Promise.all([
-        getERC20Balance(paidTokenAddress, currentAddress),
-        getERC20Balance(workTokenAddress, currentAddress),
+        getERC20Balance(paidTokenAddress.value, currentAddress),
+        getUnlockedBalance(workTokenAddress, currentAddress),
         getDiamondBalances(currentAddress)
       ])
 
@@ -218,17 +300,17 @@ export function useTokenBalances(address) {
       let workMetadata = { name: '', symbol: '', decimals: 18 }
       
       try {
-        paidMetadata = await fetchTokenMetadata(paidTokenAddress)
+        paidMetadata = await fetchTokenMetadata(paidTokenAddress.value)
       } catch (err) {
         console.error('[useTokenBalances] Не удалось получить метаданные PAID токена:', err)
-        paidMetadata = { name: 'PAID Token', symbol: 'PAID', decimals: 18 }
+        paidMetadata = { name: 'PAID', symbol: 'PAID', decimals: 18 }
       }
       
       try {
         workMetadata = await fetchTokenMetadata(workTokenAddress)
       } catch (err) {
         console.error('[useTokenBalances] Не удалось получить метаданные WORK токена:', err)
-        workMetadata = { name: 'WORK Token', symbol: 'WORK', decimals: 18 }
+        workMetadata = { name: 'CXBT', symbol: 'CXBT', decimals: 18 }
       }
 
       console.log('  - paidMetadata:', paidMetadata)

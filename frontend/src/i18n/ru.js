@@ -71,7 +71,7 @@ export default {
   },
   
   tokens: {
-    paidToken: 'Токен PAID',
-    workToken: 'Токен WORK',
+    paidToken: 'PAID',
+    workToken: 'CXBT',
   },
 }

@@ -71,7 +71,7 @@ export default {
   },
   
   tokens: {
-    paidToken: 'Jeton PAID',
-    workToken: 'Jeton WORK',
+    paidToken: 'PAID',
+    workToken: 'CXBT',
   },
 }
