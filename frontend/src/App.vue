@@ -1,20 +1,14 @@
+<template>
+  <q-layout view="hHh lpR fFf">
+    <Header />
+    <q-page-container>
+      <router-view />
+    </q-page-container>
+  </q-layout>
+</template>
+
 <script setup>
-import WalletConnect from 'src/components/WalletConnect.vue'
+import Header from 'src/components/Header.vue'
 </script>
 
-<template>
-  <QLayout view="lHh lpr lFf">
-    <QHeader elevated class="bg-primary text-white">
-      <QToolbar>
-        <QIcon name="account_balance_wallet" size="md" />
-        <QToolbarTitle> CXBT </QToolbarTitle>
-
-        <WalletConnect />
-      </QToolbar>
-    </QHeader>
-
-    <QPageContainer>
-      <RouterView />
-    </QPageContainer>
-  </QLayout>
-</template>
+<style></style>

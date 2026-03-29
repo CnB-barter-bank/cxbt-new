@@ -1,78 +1,38 @@
-import { fileURLToPath } from 'node:url'
-import { configDefaults, defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
-import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
-  plugins: [
-    vue({
-      template: { transformAssetUrls }
-    }),
-    quasar({})
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      src: fileURLToPath(new URL('./src', import.meta.url)),
-      app: fileURLToPath(new URL('./src', import.meta.url)),
-      components: fileURLToPath(new URL('./src/components', import.meta.url)),
-      layouts: fileURLToPath(new URL('./src/layouts', import.meta.url)),
-      pages: fileURLToPath(new URL('./src/pages', import.meta.url)),
-      assets: fileURLToPath(new URL('./src/assets', import.meta.url)),
-      boot: fileURLToPath(new URL('./src/boot', import.meta.url)),
-      stores: fileURLToPath(new URL('./src/stores', import.meta.url)),
-      composables: fileURLToPath(new URL('./src/composables', import.meta.url)),
-      config: fileURLToPath(new URL('./src/config', import.meta.url)),
-      i18n: fileURLToPath(new URL('./src/i18n', import.meta.url))
-    }
-  },
+  plugins: [vue()],
   test: {
     globals: true,
     environment: 'happy-dom',
-    setupFiles: ['./test/unit/setup.js'],
+    setupFiles: ['./tests/setup.js'],
+    include: ['tests/**/*.{test,spec}.{js,ts}'],
+    exclude: ['node_modules', 'dist', '.quasar'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['src/**/*.{js,ts,vue}'],
       exclude: [
-        ...configDefaults.coverage.exclude,
-        'test/**',
-        'test/**/*',
-        'test/**/*.spec.js',
-        'test/**/*.spec.ts',
-        'src/boot/**',
-        'src/boot/**/*',
-        'src/router/**',
-        'src/router/**/*',
-        'src/layouts/**',
-        'src/layouts/**/*',
-        'src/pages/ErrorNotFound.vue',
-        '**/*.spec.js',
-        '**/*.spec.ts',
-        '**/node_modules/**',
-        '**/.quasar/**',
-        '**/dist/**',
-        '**/coverage/**',
-        '**/*.config.js',
-        '**/*.config.ts',
-        '**/quasar.config.*',
-        '**/vite.config.*',
-        '**/vitest.config.*',
-        '**/.eslintrc.*',
-        '**/.prettierrc.*',
-        '**/.commitlintrc.*',
-        '**/.editorconfig',
-        '**/.env.*',
-        '**/scripts/**',
-        '**/public/**'
+        'src/main.js',
+        'src/shims-vue.d.ts',
+        'src/**/*.d.ts',
+        'src/**/*.spec.js',
+        'src/**/*.test.js',
       ],
-      all: true,
-      statements: 70,
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      include: ['src/**/*.{js,vue}']
+      statements: 90,
+      branches: 90,
+      functions: 90,
+      lines: 90,
     },
-    include: ['test/unit/**/*.spec.js'],
-    exclude: ['node_modules', '.quasar', 'dist']
-  }
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'src': fileURLToPath(new URL('./src', import.meta.url)),
+      'stores': fileURLToPath(new URL('./src/stores', import.meta.url)),
+      '@/i18n': fileURLToPath(new URL('./src/i18n', import.meta.url)),
+    },
+  },
 })

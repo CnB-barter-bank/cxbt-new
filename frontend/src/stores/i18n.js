@@ -1,42 +1,85 @@
 import { defineStore } from 'pinia'
-import { i18n } from 'src/boot/i18n'
+import { ref, computed } from 'vue'
 
-export const useI18nStore = defineStore('i18n', {
-  state: () => ({
-    availableLanguages: [
-      { code: 'en', name: 'English', flag: '🇬🇧' },
-      { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-      { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-      { code: 'fr', name: 'Français', flag: '🇫🇷' },
-      { code: 'zh', name: '中文', flag: '🇨🇳' },
-      { code: 'bg', name: 'Български', flag: '🇧🇬' }
-    ]
-  }),
+// Импорт переводов для использования в методе t()
+import translations from '../i18n/translations'
 
-  getters: {
-    currentLocale: () => i18n.global.locale.value,
-    currentLanguage: state => {
-      return (
-        state.availableLanguages.find(lang => lang.code === i18n.global.locale.value) ||
-        state.availableLanguages[0]
-      )
-    }
-  },
+export const useI18nStore = defineStore('i18n', () => {
+  const STORAGE_KEY = 'cxbt-locale'
 
-  actions: {
-    setLocale(localeCode) {
-      if (this.availableLanguages.some(lang => lang.code === localeCode)) {
-        i18n.global.locale.value = localeCode
-        localStorage.setItem('locale', localeCode)
+  const currentLanguage = ref(localStorage.getItem(STORAGE_KEY) || 'en')
+
+  const availableLanguages = [
+    { code: 'en', name: 'English' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'fr', name: 'Français' },
+    { code: 'bg', name: 'Български' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'zh', name: '中文' },
+  ]
+
+  function setLanguage(lang) {
+    if (availableLanguages.some(l => l.code === lang)) {
+      currentLanguage.value = lang
+      try {
+        localStorage.setItem(STORAGE_KEY, lang)
+      } catch (e) {
+        // localStorage может быть недоступен в тестах
       }
-    },
-
-    toggleLocale() {
-      const currentIndex = this.availableLanguages.findIndex(
-        lang => lang.code === this.currentLocale
-      )
-      const nextIndex = (currentIndex + 1) % this.availableLanguages.length
-      this.setLocale(this.availableLanguages[nextIndex].code)
     }
+  }
+
+  // Алиас для совместимости (возвращает текущий язык)
+  const currentLocale = computed(() => currentLanguage.value)
+
+  function setLocale(lang) {
+    if (availableLanguages.some(l => l.code === lang)) {
+      setLanguage(lang)
+    }
+  }
+
+  // Метод для получения перевода по ключу
+  function t(key, params = {}) {
+    const locale = currentLocale.value
+    const localeTranslations = translations[locale]
+
+    if (!localeTranslations) {
+      return key
+    }
+
+    // Поддержка вложенных ключей через точечную нотацию
+    const keys = key.split('.')
+    let value = localeTranslations
+
+    for (const k of keys) {
+      if (value && typeof value === 'object' && k in value) {
+        value = value[k]
+      } else {
+        return key // Возвращаем ключ, если перевод не найден
+      }
+    }
+
+    // Если значение не строка, возвращаем как есть
+    if (typeof value !== 'string') {
+      return value
+    }
+
+    // Поддержка интерполяции {variable}
+    return value.replace(/\{(\w+)\}/g, (match, param) => {
+      return params[param] !== undefined ? params[param] : match
+    })
+  }
+
+  // Доступные локали (короткие коды)
+  const availableLocales = computed(() => availableLanguages.map(l => l.code))
+
+  return {
+    currentLanguage,
+    availableLanguages,
+    setLanguage,
+    currentLocale,
+    setLocale,
+    t,
+    availableLocales,
   }
 })

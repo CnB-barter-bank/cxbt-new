@@ -1,43 +1,50 @@
 import { createApp } from 'vue'
-import { Quasar } from 'quasar'
 import { createPinia } from 'pinia'
-import iconSet from 'quasar/icon-set/material-icons'
+import { Quasar } from 'quasar'
+import router from './router'
+import i18n from './i18n'
+import App from './App.vue'
 
 // Import icon libraries
 import '@quasar/extras/material-icons/material-icons.css'
-import '@quasar/extras/fontawesome-v6/fontawesome-v6.css'
 
 // Import Quasar css
 import 'quasar/src/css/index.sass'
 
-// Import app styles
-import './css/app.scss'
+// Import WalletConnect configuration
+import { wagmiConfig, queryClient, initializeWeb3Modal } from './composables/useWalletConnect'
 
-// Assumes your root component is App.vue
-// and placed in same folder as main.js
-import App from './App.vue'
+// Import Vue Query plugin
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
-// Import contract configuration and validation
-import { validateContractAddresses } from './config/contracts'
+// Initialize Web3Modal before creating the app
+initializeWeb3Modal()
 
-// Validate contract addresses on startup
-const contractErrors = validateContractAddresses()
-if (contractErrors.length > 0) {
-  console.error('Contract address validation errors:', contractErrors)
-  contractErrors.forEach(error => console.error(error))
-}
+const app = createApp(App)
 
-// Create Pinia instance
-const pinia = createPinia()
-
-const myApp = createApp(App)
-
-// Use Pinia
-myApp.use(pinia)
-
-myApp.use(Quasar, {
-  plugins: [], // Import Quasar plugins and add here
-  iconSet
+app.use(createPinia())
+app.use(router)
+app.use(i18n)
+app.use(Quasar, {
+  plugins: {}, // import Quasar plugins and add here
 })
 
-myApp.mount('#app')
+// Setup Vue Query with QueryClient
+app.use(VueQueryPlugin, {
+  queryClient,
+})
+
+// Auto-reconnect wallet if previously connected
+const autoConnectWallet = async () => {
+  try {
+    const { reconnect } = await import('@wagmi/core')
+    await reconnect(wagmiConfig)
+  } catch (error) {
+    console.error('Ошибка автоматического подключения к кошельку:', error)
+  }
+}
+
+// Initialize auto-reconnect before mounting
+autoConnectWallet().then(() => {
+  app.mount('#app')
+})

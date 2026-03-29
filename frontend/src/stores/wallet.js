@@ -1,375 +1,316 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
-import { ethers } from 'ethers'
-import { WEB3_CONFIG, getChainConfig } from '../config/web3'
-import { CONTRACTS, CXBT_ABI, ERC20_ABI } from '../config/contracts'
-
-// Persist helpers
-const PERSIST_KEY = 'cxbt-wallet'
-
-function loadPersistedState() {
-  try {
-    const saved = localStorage.getItem(PERSIST_KEY)
-    if (saved) {
-      return JSON.parse(saved)
-    }
-  } catch (err) {
-    console.error('Error loading persisted wallet state:', err)
-  }
-  return null
-}
-
-function savePersistedState(state) {
-  try {
-    localStorage.setItem(PERSIST_KEY, JSON.stringify(state))
-  } catch (err) {
-    console.error('Error saving wallet state:', err)
-  }
-}
-
-function clearPersistedState() {
-  try {
-    localStorage.removeItem(PERSIST_KEY)
-  } catch (err) {
-    console.error('Error clearing wallet state:', err)
-  }
-}
+import { ref, computed } from 'vue'
 
 export const useWalletStore = defineStore('wallet', () => {
-  // State
-  const isConnected = ref(false)
-  const address = ref(null)
-  const chainId = ref(null)
-  const signer = ref(null)
-  const provider = ref(null)
-  const balance = ref('0')
-  const loading = ref(false)
-  const error = ref(null)
+  const STORAGE_KEY = 'cxbt-wallet'
 
-  // Load persisted state on initialization
-  const persisted = loadPersistedState()
-  if (persisted) {
-    isConnected.value = persisted.isConnected || false
-    address.value = persisted.address || null
-    chainId.value = persisted.chainId || null
-    balance.value = persisted.balance || '0'
+  // Инициализация состояния из localStorage
+  const savedWallet = ref(null)
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      savedWallet.value = JSON.parse(saved)
+    }
+  } catch (e) {
+    // localStorage может быть недоступен в тестах
   }
 
-  // Persist state changes
-  watch(
-    () => ({
-      isConnected: isConnected.value,
-      address: address.value,
-      chainId: chainId.value,
-      balance: balance.value
-    }),
-    state => {
-      savePersistedState(state)
-    },
-    { deep: true }
-  )
+  const address = ref(savedWallet.value?.address || null)
+  const isConnected = ref(savedWallet.value?.isConnected || false)
+  const chainId = ref(savedWallet.value?.chainId || null)
+  const balance = ref(savedWallet.value?.balance || null)
+  
+  // Балансы токенов
+  const paidBalance = ref(savedWallet.value?.paidBalance ? BigInt(savedWallet.value.paidBalance) : null)
+  const workBalance = ref(savedWallet.value?.workBalance ? BigInt(savedWallet.value.workBalance) : null)
+  const lockedTokens = ref(savedWallet.value?.lockedTokens ? BigInt(savedWallet.value.lockedTokens) : null)
+  const balancesLoading = ref(false)
+  const balancesError = ref(null)
+
+  // Названия токенов
+  const paidTokenName = ref(savedWallet.value?.paidTokenName || null)
+  const paidTokenSymbol = ref(savedWallet.value?.paidTokenSymbol || null)
+  const workTokenName = ref(savedWallet.value?.workTokenName || null)
+  const workTokenSymbol = ref(savedWallet.value?.workTokenSymbol || null)
+  
+  // Decimals для токенов
+  const paidDecimals = ref(savedWallet.value?.paidDecimals || 18)
+  const workDecimals = ref(savedWallet.value?.workDecimals || 18)
+
+  // Функция для сохранения состояния в localStorage
+  function saveToStorage() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          address: address.value,
+          isConnected: isConnected.value,
+          chainId: chainId.value,
+          balance: balance.value,
+          paidBalance: paidBalance.value ? paidBalance.value.toString() : null,
+          workBalance: workBalance.value ? workBalance.value.toString() : null,
+          lockedTokens: lockedTokens.value ? lockedTokens.value.toString() : null,
+          paidTokenName: paidTokenName.value,
+          paidTokenSymbol: paidTokenSymbol.value,
+          workTokenName: workTokenName.value,
+          workTokenSymbol: workTokenSymbol.value,
+          paidDecimals: paidDecimals.value,
+          workDecimals: workDecimals.value,
+        })
+      )
+    } catch (e) {
+      // localStorage может быть недоступен в тестах
+    }
+  }
+
+  function connect() {
+    console.log('[Wallet Store] connect() called')
+    isConnected.value = true
+    console.log('[Wallet Store] isConnected.value after connect:', isConnected.value)
+    saveToStorage()
+  }
+
+  function disconnect() {
+    console.log('[Wallet Store] disconnect() called')
+    address.value = null
+    isConnected.value = false
+    chainId.value = null
+    balance.value = null
+    clearBalances()
+    console.log('[Wallet Store] State after disconnect - address:', address.value, 'isConnected:', isConnected.value)
+    saveToStorage()
+  }
+
+  function setAddress(newAddress) {
+    console.log('[Wallet Store] setAddress called with:', newAddress)
+    address.value = newAddress
+    console.log('[Wallet Store] address.value after set:', address.value)
+    saveToStorage()
+  }
+
+  function setIsConnected(status) {
+    console.log('[Wallet Store] setIsConnected called with:', status)
+    isConnected.value = status
+    console.log('[Wallet Store] isConnected.value after set:', isConnected.value)
+    saveToStorage()
+  }
+
+  function setChainId(newChainId) {
+    chainId.value = newChainId
+    saveToStorage()
+  }
+
+  function setBalance(newBalance) {
+    balance.value = newBalance
+    saveToStorage()
+  }
+
+  // Actions для балансов токенов
+  function setPaidBalance(balance) {
+    paidBalance.value = balance
+    saveToStorage()
+  }
+
+  function setWorkBalance(balance) {
+    workBalance.value = balance
+    saveToStorage()
+  }
+
+  function setLockedTokens(amount) {
+    lockedTokens.value = amount
+    saveToStorage()
+  }
+
+  function setBalancesLoading(loading) {
+    balancesLoading.value = loading
+  }
+
+  function setBalancesError(error) {
+    balancesError.value = error
+  }
+
+  // Actions для названий токенов
+  function setPaidTokenName(name) {
+    paidTokenName.value = name
+    saveToStorage()
+  }
+
+  function setPaidTokenSymbol(symbol) {
+    paidTokenSymbol.value = symbol
+    saveToStorage()
+  }
+
+  function setWorkTokenName(name) {
+    workTokenName.value = name
+    saveToStorage()
+  }
+
+  function setWorkTokenSymbol(symbol) {
+    workTokenSymbol.value = symbol
+    saveToStorage()
+  }
+
+  // Actions для decimals
+  function setPaidDecimals(decimals) {
+    console.log('[Wallet Store] setPaidDecimals called with:', decimals)
+    paidDecimals.value = decimals
+    saveToStorage()
+  }
+
+  function setWorkDecimals(decimals) {
+    console.log('[Wallet Store] setWorkDecimals called with:', decimals)
+    workDecimals.value = decimals
+    saveToStorage()
+  }
+
+  function clearBalances() {
+    paidBalance.value = null
+    workBalance.value = null
+    lockedTokens.value = null
+    balancesLoading.value = false
+    balancesError.value = null
+    paidTokenName.value = null
+    paidTokenSymbol.value = null
+    workTokenName.value = null
+    workTokenSymbol.value = null
+    paidDecimals.value = 18
+    workDecimals.value = 18
+  }
 
   // Getters
   const shortAddress = computed(() => {
-    if (!address.value) return ''
+    if (!address.value) return null
     return `${address.value.slice(0, 6)}...${address.value.slice(-4)}`
   })
 
-  const currentChain = computed(() => {
-    if (!chainId.value) return null
-    return getChainConfig(chainId.value)
-  })
-
   const isBaseNetwork = computed(() => {
-    return chainId.value === WEB3_CONFIG.base.chainId
+    return chainId.value === 8453
   })
 
-  const isConnectedToBase = computed(() => {
-    return isConnected.value && isBaseNetwork.value
+  // Getters для балансов токенов
+  const hasBalances = computed(() => {
+    return paidBalance.value !== null || workBalance.value !== null
   })
 
-  // Actions
-  const updateBalance = async () => {
-    if (!address.value || !provider.value) return
-
-    try {
-      const balanceWei = await provider.value.getBalance(address.value)
-      balance.value = ethers.formatEther(balanceWei)
-    } catch (err) {
-      console.error('Ошибка получения баланса:', err)
+  /**
+   * Форматирует баланс токена с учётом decimals
+   * @param {bigint} balance - Баланс в наименьших единицах
+   * @param {number} decimals - Количество decimals токена
+   * @returns {string} Отформатированный баланс
+   */
+  const formatTokenBalance = (balance, decimals) => {
+    if (balance === null || balance === undefined) return '0'
+    
+    const divisor = BigInt(10 ** decimals)
+    const wholePart = balance / divisor
+    const fractionalPart = balance % divisor
+    
+    // Форматируем целую часть с разделителями тысяч
+    const wholeStr = wholePart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    
+    // Форматируем дробную часть
+    let fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+    // Убираем trailing zeros
+    fractionalStr = fractionalStr.replace(/0+$/, '')
+    
+    if (fractionalStr === '') {
+      return wholeStr
     }
+    
+    return `${wholeStr}.${fractionalStr}`
   }
 
-  const switchNetwork = async targetChainId => {
-    if (!provider.value) {
-      throw new Error('Provider не инициализирован')
-    }
-
-    try {
-      // Try to switch to the network
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${targetChainId.toString(16)}` }]
-      })
-    } catch (switchError) {
-      // Обработка отказа пользователя (код 4001)
-      if (switchError.code === 4001) {
-        throw new Error('errors.userRejectedTransaction')
-      }
-
-      // This error code indicates that the chain has not been added to MetaMask
-      if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: `0x${targetChainId.toString(16)}`,
-                chainName: WEB3_CONFIG.base.name,
-                nativeCurrency: WEB3_CONFIG.base.nativeCurrency,
-                rpcUrls: WEB3_CONFIG.base.rpcUrls.default.http,
-                blockExplorerUrls: [WEB3_CONFIG.base.blockExplorers.default.url]
-              }
-            ]
-          })
-        } catch (addError) {
-          throw new Error('errors.failedToAddNetwork')
-        }
-      } else {
-        throw new Error('errors.failedToSwitchNetwork')
-      }
-    }
-  }
-
-  const setupEventListeners = () => {
-    if (typeof window.ethereum === 'undefined') return
-
-    // Handle account changes
-    window.ethereum.on('accountsChanged', accounts => {
-      if (accounts.length === 0) {
-        // eslint-disable-next-line no-use-before-define
-        disconnectWallet()
-      } else {
-        address.value = accounts[0]
-        updateBalance()
-      }
+  const formattedPaidBalance = computed(() => {
+    console.log('[Wallet Store] formattedPaidBalance computed:', {
+      balance: paidBalance.value?.toString(),
+      decimals: paidDecimals.value
     })
+    if (paidBalance.value === null) return '0'
+    const formatted = formatTokenBalance(paidBalance.value, paidDecimals.value)
+    console.log('[Wallet Store] formattedPaidBalance result:', formatted)
+    return formatted
+  })
 
-    // Handle chain changes
-    window.ethereum.on('chainChanged', newChainId => {
-      chainId.value = Number(newChainId)
-      // Reload page on chain change
-      window.location.reload()
+  const formattedWorkBalance = computed(() => {
+    console.log('[Wallet Store] formattedWorkBalance computed:', {
+      balance: workBalance.value?.toString(),
+      decimals: workDecimals.value
     })
+    if (workBalance.value === null) return '0'
+    const formatted = formatTokenBalance(workBalance.value, workDecimals.value)
+    console.log('[Wallet Store] formattedWorkBalance result:', formatted)
+    return formatted
+  })
 
-    // Handle disconnect
-    window.ethereum.on('disconnect', () => {
-      // eslint-disable-next-line no-use-before-define
-      disconnectWallet()
+  const formattedLockedTokens = computed(() => {
+    console.log('[Wallet Store] formattedLockedTokens computed:', {
+      balance: lockedTokens.value?.toString(),
+      decimals: workDecimals.value
     })
-  }
+    if (lockedTokens.value === null || lockedTokens.value === undefined) return '0'
+    const formatted = formatTokenBalance(lockedTokens.value, workDecimals.value)
+    console.log('[Wallet Store] formattedLockedTokens result:', formatted)
+    return formatted
+  })
 
-  const connectWallet = async () => {
-    loading.value = true
-    error.value = null
-
-    try {
-      if (typeof window.ethereum === 'undefined') {
-        throw new Error('errors.walletNotFound')
-      }
-
-      // Create provider and signer
-      provider.value = new ethers.BrowserProvider(window.ethereum)
-
-      // Request account access
-      const accounts = await provider.value.send('eth_requestAccounts', [])
-      address.value = accounts[0]
-
-      // Get signer
-      signer.value = await provider.value.getSigner()
-
-      // Get network
-      const network = await provider.value.getNetwork()
-      chainId.value = Number(network.chainId)
-
-      // Get balance
-      await updateBalance()
-
-      // Check if on Base network, if not switch
-      if (chainId.value !== WEB3_CONFIG.base.chainId) {
-        await switchNetwork(WEB3_CONFIG.base.chainId)
-      }
-
-      isConnected.value = true
-
-      // Setup event listeners
-      setupEventListeners()
-
-      return { success: true, address: address.value }
-    } catch (err) {
-      console.error('Ошибка подключения кошелька:', err)
-
-      // Обработка отказа пользователя (код 4001)
-      if (err.code === 4001) {
-        error.value = 'errors.userRejectedTransaction'
-        return { success: false, error: error.value }
-      }
-
-      error.value = err.message || 'Не удалось подключить кошелек'
-      return { success: false, error: error.value }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const disconnectWallet = () => {
-    isConnected.value = false
-    address.value = null
-    chainId.value = null
-    signer.value = null
-    provider.value = null
-    balance.value = '0'
-    error.value = null
-
-    // Clear persisted state
-    clearPersistedState()
-
-    // Remove event listeners
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.removeAllListeners()
-    }
-  }
-
-  const checkConnection = async () => {
-    if (typeof window.ethereum === 'undefined') return false
-
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-
-      if (accounts.length > 0) {
-        provider.value = new ethers.BrowserProvider(window.ethereum)
-        address.value = accounts[0]
-        signer.value = await provider.value.getSigner()
-
-        const network = await provider.value.getNetwork()
-        chainId.value = Number(network.chainId)
-
-        await updateBalance()
-        isConnected.value = true
-
-        setupEventListeners()
-
-        return true
-      }
-    } catch (err) {
-      console.error('Ошибка проверки подключения:', err)
-    }
-
-    return false
-  }
-
-  // Contract helpers
-  const getCXBTContract = () => {
-    if (!signer.value) {
-      throw new Error('Signer не инициализирован. Подключите кошелек.')
-    }
-    return new ethers.Contract(CONTRACTS.CXBT_DIAMOND, CXBT_ABI, signer.value)
-  }
-
-  const getPAIDContract = () => {
-    if (!signer.value) {
-      throw new Error('Signer не инициализирован. Подключите кошелек.')
-    }
-    return new ethers.Contract(CONTRACTS.PAID_TOKEN, ERC20_ABI, signer.value)
-  }
-
-  const getContract = (contractAddress, abi) => {
-    if (!signer.value) {
-      throw new Error('Signer не инициализирован. Подключите кошелек.')
-    }
-    return new ethers.Contract(contractAddress, abi, signer.value)
-  }
-
-  const getCXBTContractWithProvider = () => {
-    if (!provider.value) {
-      throw new Error('Provider не инициализирован. Подключите кошелек.')
-    }
-    return new ethers.Contract(CONTRACTS.CXBT_DIAMOND, CXBT_ABI, provider.value)
-  }
-
-  const getPAIDContractWithProvider = () => {
-    if (!provider.value) {
-      throw new Error('Provider не инициализирован. Подключите кошелек.')
-    }
-    return new ethers.Contract(CONTRACTS.PAID_TOKEN, ERC20_ABI, provider.value)
-  }
-
-  // Utility функции для работы с контрактами
-  const parseUnits = (value, decimals = 18) => {
-    try {
-      return ethers.parseUnits(value.toString(), decimals)
-    } catch {
-      return 0n
-    }
-  }
-
-  const formatUnits = (value, decimals = 18) => {
-    try {
-      return ethers.formatUnits(value, decimals)
-    } catch {
-      return '0'
-    }
-  }
-
-  const isValidAddress = addr => {
-    try {
-      return ethers.isAddress(addr)
-    } catch {
-      return false
-    }
-  }
-
-  // eslint-disable-next-line require-await
-  const waitForTransaction = async (txHash, confirmations = 1, timeout = 60000) => {
-    if (!provider.value) {
-      throw new Error('Provider не инициализирован.')
-    }
-    return provider.value.waitForTransaction(txHash, confirmations, timeout)
-  }
+  const totalWorkTokens = computed(() => {
+    const work = workBalance.value || 0n
+    const locked = lockedTokens.value || 0n
+    const total = work + locked
+    console.log('[Wallet Store] totalWorkTokens computed:', {
+      work: work.toString(),
+      locked: locked.toString(),
+      total: total.toString(),
+      decimals: workDecimals.value
+    })
+    const formatted = formatTokenBalance(total, workDecimals.value)
+    console.log('[Wallet Store] totalWorkTokens result:', formatted)
+    return formatted
+  })
 
   return {
     // State
-    isConnected,
     address,
+    isConnected,
     chainId,
-    signer,
-    provider,
     balance,
-    loading,
-    error,
-
+    paidBalance,
+    workBalance,
+    lockedTokens,
+    balancesLoading,
+    balancesError,
+    paidTokenName,
+    paidTokenSymbol,
+    workTokenName,
+    workTokenSymbol,
+    paidDecimals,
+    workDecimals,
+    // Actions
+    connect,
+    disconnect,
+    setAddress,
+    setIsConnected,
+    setChainId,
+    setBalance,
+    setPaidBalance,
+    setWorkBalance,
+    setLockedTokens,
+    setBalancesLoading,
+    setBalancesError,
+    setPaidTokenName,
+    setPaidTokenSymbol,
+    setWorkTokenName,
+    setWorkTokenSymbol,
+    setPaidDecimals,
+    setWorkDecimals,
+    clearBalances,
     // Getters
     shortAddress,
-    currentChain,
     isBaseNetwork,
-    isConnectedToBase,
-
-    // Actions
-    connectWallet,
-    disconnectWallet,
-    switchNetwork,
-    updateBalance,
-    checkConnection,
-    getCXBTContract,
-    getPAIDContract,
-    getCXBTContractWithProvider,
-    getPAIDContractWithProvider,
-    getContract,
-
-    // Utility функции
-    parseUnits,
-    formatUnits,
-    isValidAddress,
-    waitForTransaction
+    hasBalances,
+    formattedPaidBalance,
+    formattedWorkBalance,
+    formattedLockedTokens,
+    totalWorkTokens,
   }
 })
