@@ -92,18 +92,16 @@ export function useTokenBalances(address) {
 
   // Получаем адреса контрактов из переменных окружения
   const workTokenAddress = import.meta.env.VITE_WORK_TOKEN_ADDRESS
-  const diamondAddress = import.meta.env.VITE_DIAMOND_ADDRESS
   const paidTokenAddress = ref(null)
 
-  // Логируем адреса контрактов из переменных окружения для отладки
+  // Логируем адреса контракта из переменных окружения для отладки
   console.log('[useTokenBalances] Переменные окружения:')
   console.log('  - VITE_WORK_TOKEN_ADDRESS:', workTokenAddress)
-  console.log('  - VITE_DIAMOND_ADDRESS:', diamondAddress)
 
-  // Проверяем, что все адреса контрактов настроены
+  // Проверяем, что адрес контракта настроен
   // paidTokenAddress может быть null, он будет получен динамически из контракта
   const isConfigured = computed(() => {
-    const configured = !!workTokenAddress && !!diamondAddress
+    const configured = !!workTokenAddress
     console.log('[useTokenBalances] isConfigured:', configured)
     return configured
   })
@@ -273,10 +271,9 @@ export function useTokenBalances(address) {
         }
       }
 
-      // Логируем адреса контрактов для диагностики
-      console.log('[useTokenBalances] Используемые адреса контрактов:')
+      // Логируем адрес контракта для диагностики
+      console.log('[useTokenBalances] Используемый адрес контракта:')
       console.log('  - workTokenAddress:', workTokenAddress)
-      console.log('  - diamondAddress:', diamondAddress)
       console.log('  - paidTokenAddress:', paidTokenAddress.value)
       
       // Параллельно получаем все балансы и метаданные токенов
