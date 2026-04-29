@@ -8,7 +8,10 @@
           {{ i18nStore.t('page.subtitle', { paidToken: paidTokenSymbol || 'PAID', workToken: workTokenSymbol || 'CXBT' }) }}
         </p>
       </div>
-
+      <div  class="text-center q-mb-xl">
+        <p>This is an Automated system and process for centralized completion and settlement of barter deals and transactions, for rapid achievement and fair valuation of barter exchange of goods and services;
+real-time electronic transition.</p>
+      </div>
       <!-- Секция балансов токенов (показывается только при подключенном кошельке и закрытом диалоге) -->
       <div v-if="wallet.isConnected && !isWalletDialogOpen" class="balances-section">
         <div class="row items-center justify-between q-mb-md">
