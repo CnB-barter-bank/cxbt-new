@@ -259,6 +259,7 @@ import { useTokenBalances } from '../composables/useTokenBalances'
 import { useTokenUnlock } from '../composables/useTokenUnlock'
 import { useTokenTransfer } from '../composables/useTokenTransfer'
 import { Notify, debounce } from 'quasar'
+import { parseUnits } from 'viem'
 
 const i18nStore = useI18nStore()
 
@@ -398,11 +399,11 @@ const handleUnlock = async () => {
     return
   }
 
-  const lockedBalance = parseFloat(wallet.formattedLockedTokens)
-  if (unlockAmount.value > lockedBalance) {
+  // Проверяем, что lockedTokens существует и не null
+  if (wallet.lockedTokens === null || wallet.lockedTokens === undefined) {
     Notify.create({
       type: 'warning',
-      message: i18nStore.t('notify.insufficientLocked')
+      message: i18nStore.t('notify.balancesNotLoaded')
     })
     return
   }
@@ -410,9 +411,25 @@ const handleUnlock = async () => {
   isUnlocking.value = true
 
   try {
-    // Конвертируем сумму в wei с учетом decimals
+    // Конвертируем и проверяем
     const decimals = workDecimals.value || 18
-    const amountInWei = BigInt(Math.floor(unlockAmount.value * (10 ** decimals)))
+    const amountInWei = parseUnits(unlockAmount.value.toString(), decimals)
+
+    // Проверяем достаточность заблокированных токенов
+    if (amountInWei > wallet.lockedTokens) {
+      Notify.create({
+        type: 'warning',
+        message: i18nStore.t('notify.insufficientLocked')
+      })
+      return
+    }
+
+    // Отладочные логи
+    console.log('[LandingPage] Данные для разблокировки:')
+    console.log('  - unlockAmount.value:', unlockAmount.value)
+    console.log('  - workDecimals.value:', workDecimals.value)
+    console.log('  - wallet.lockedTokens:', wallet.lockedTokens?.toString())
+    console.log('  - amountInWei:', amountInWei.toString())
     
     await unlockTokensWithApproval(amountInWei, wallet.address)
     

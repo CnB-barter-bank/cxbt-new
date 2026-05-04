@@ -80,7 +80,7 @@ export function useTokenBalances(address) {
   // Реактивные состояния
   const paidBalance = ref(0n)
   const workBalance = ref(0n)
-  const lockedTokens = ref(0n)
+  const lockedTokens = ref(null)
   const paidTokenName = ref('')
   const paidTokenSymbol = ref('')
   const workTokenName = ref('')
@@ -317,7 +317,7 @@ export function useTokenBalances(address) {
       paidBalance.value = paid
       workBalance.value = work
       // Проверяем, что diamondBalances.locked существует и не undefined
-      lockedTokens.value = diamondBalances?.locked !== undefined ? diamondBalances.locked : 0n
+      lockedTokens.value = diamondBalances?.locked !== undefined ? diamondBalances.locked : null
       paidTokenName.value = paidMetadata.name
       paidTokenSymbol.value = paidMetadata.symbol
       paidDecimals.value = paidMetadata.decimals
