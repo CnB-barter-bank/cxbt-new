@@ -1,6 +1,10 @@
 <template>
   <q-page class="flex flex-center">
-    <div class="container q-pa-md" style="max-width: 1200px; width: 100%">
+    <!-- ErrorPopup показывается при критической ошибке -->
+    <ErrorPopup v-if="criticalError" :error="criticalError" />
+    
+    <!-- Весь контент скрывается при критической ошибке -->
+    <div v-else class="container q-pa-md" style="max-width: 1200px; width: 100%">
       <!-- Заголовок страницы -->
       <div class="text-center q-mb-xl">
         <h1 class="text-h4 text-weight-bold text-primary q-mb-sm">{{ i18nStore.t('page.title') }}</h1>
@@ -260,6 +264,7 @@ import { useTokenUnlock } from '../composables/useTokenUnlock'
 import { useTokenTransfer } from '../composables/useTokenTransfer'
 import { Notify, debounce } from 'quasar'
 import { parseUnits } from 'viem'
+import ErrorPopup from '../components/ErrorPopup.vue'
 
 const i18nStore = useI18nStore()
 
@@ -299,6 +304,7 @@ const {
   workDecimals,
   isLoading: balancesLoading,
   error: balancesError,
+  criticalError,
   fetchBalances
 } = useTokenBalances(() => wallet.address)
 
@@ -513,7 +519,8 @@ const workTokenDisplayName = computed(() => {
 watch(
   [paidBalance, workBalance, lockedTokens, paidTokenName, paidTokenSymbol, workTokenName, workTokenSymbol, paidDecimals, workDecimals, balancesLoading, balancesError],
   ([newPaid, newWork, newLocked, newPaidName, newPaidSymbol, newWorkName, newWorkSymbol, newPaidDecimals, newWorkDecimals, newLoading, newError]) => {
-    console.log('[LandingPage] Watch сработал:', {
+    console.log('[LandingPage] Watch сработал - ДЕБАГ БАЛАНСОВ:', {
+      timestamp: new Date().toISOString(),
       newPaid: newPaid?.toString(),
       newWork: newWork?.toString(),
       newLocked: newLocked?.toString(),
@@ -524,36 +531,52 @@ watch(
       newPaidDecimals,
       newWorkDecimals,
       newLoading,
-      newError
+      newError,
+      // Текущие значения в wallet store
+      walletPaidDecimals: wallet.paidDecimals,
+      walletWorkDecimals: wallet.workDecimals,
+      walletPaidBalance: wallet.paidBalance?.toString(),
+      walletWorkBalance: wallet.workBalance?.toString(),
+      walletLockedTokens: wallet.lockedTokens?.toString(),
+      // Отформатированные значения
+      formattedPaid: wallet.formattedPaidBalance,
+      formattedWork: wallet.formattedWorkBalance,
+      formattedLocked: wallet.formattedLockedTokens
     })
     
-    if (newPaid !== null) {
-      wallet.setPaidBalance(newPaid)
+    // Обновляем wallet store только когда загрузка завершена
+    // Это предотвращает обновление с неполными данными (например, когда decimals еще не загружены)
+    if (!newLoading) {
+      if (newPaid !== null) {
+        wallet.setPaidBalance(newPaid)
+      }
+      if (newWork !== null) {
+        wallet.setWorkBalance(newWork)
+      }
+      if (newLocked !== null) {
+        wallet.setLockedTokens(newLocked)
+      }
+      if (newPaidName) {
+        wallet.setPaidTokenName(newPaidName)
+      }
+      if (newPaidSymbol) {
+        wallet.setPaidTokenSymbol(newPaidSymbol)
+      }
+      if (newWorkName) {
+        wallet.setWorkTokenName(newWorkName)
+      }
+      if (newWorkSymbol) {
+        wallet.setWorkTokenSymbol(newWorkSymbol)
+      }
+      if (newPaidDecimals !== undefined) {
+        wallet.setPaidDecimals(newPaidDecimals)
+      }
+      if (newWorkDecimals !== undefined) {
+        wallet.setWorkDecimals(newWorkDecimals)
+      }
     }
-    if (newWork !== null) {
-      wallet.setWorkBalance(newWork)
-    }
-    if (newLocked !== null) {
-      wallet.setLockedTokens(newLocked)
-    }
-    if (newPaidName) {
-      wallet.setPaidTokenName(newPaidName)
-    }
-    if (newPaidSymbol) {
-      wallet.setPaidTokenSymbol(newPaidSymbol)
-    }
-    if (newWorkName) {
-      wallet.setWorkTokenName(newWorkName)
-    }
-    if (newWorkSymbol) {
-      wallet.setWorkTokenSymbol(newWorkSymbol)
-    }
-    if (newPaidDecimals !== undefined) {
-      wallet.setPaidDecimals(newPaidDecimals)
-    }
-    if (newWorkDecimals !== undefined) {
-      wallet.setWorkDecimals(newWorkDecimals)
-    }
+    
+    // Статус загрузки и ошибок обновляем всегда
     wallet.setBalancesLoading(newLoading)
     wallet.setBalancesError(newError)
   },

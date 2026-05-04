@@ -89,6 +89,7 @@ export function useTokenBalances(address) {
   const workDecimals = ref(18) // Дефолтное значение decimals
   const isLoading = ref(false)
   const error = ref(null)
+  const criticalError = ref(null)
 
   // Получаем адреса контрактов из переменных окружения
   const workTokenAddress = import.meta.env.VITE_WORK_TOKEN_ADDRESS
@@ -192,8 +193,7 @@ export function useTokenBalances(address) {
     } catch (err) {
       console.error('[useTokenBalances] Ошибка получения балансов из Diamond:', err)
       console.error('[useTokenBalances] Stack trace:', err.stack)
-      // Возвращаем объект с дефолтными значениями вместо выброса ошибки
-      return { unlocked: 0n, locked: 0n, total: 0n }
+      throw err
     }
   }
 
@@ -300,14 +300,16 @@ export function useTokenBalances(address) {
         paidMetadata = await fetchTokenMetadata(paidTokenAddress.value)
       } catch (err) {
         console.error('[useTokenBalances] Не удалось получить метаданные PAID токена:', err)
-        paidMetadata = { name: 'PAID', symbol: 'PAID', decimals: 18 }
+        criticalError.value = err
+        return
       }
       
       try {
         workMetadata = await fetchTokenMetadata(workTokenAddress)
       } catch (err) {
         console.error('[useTokenBalances] Не удалось получить метаданные WORK токена:', err)
-        workMetadata = { name: 'CXBT', symbol: 'CXBT', decimals: 18 }
+        criticalError.value = err
+        return
       }
 
       console.log('  - paidMetadata:', paidMetadata)
@@ -338,6 +340,7 @@ export function useTokenBalances(address) {
       })
     } catch (err) {
       error.value = err
+      criticalError.value = err
       console.error('[useTokenBalances] Ошибка при получении балансов:', err)
       console.error('[useTokenBalances] Stack trace:', err.stack)
     } finally {
@@ -374,6 +377,7 @@ export function useTokenBalances(address) {
     workDecimals,
     isLoading,
     error,
+    criticalError,
     fetchBalances,
     isConfigured
   }
