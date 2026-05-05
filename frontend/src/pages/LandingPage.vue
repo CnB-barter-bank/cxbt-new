@@ -269,6 +269,30 @@ import ErrorPopup from '../components/ErrorPopup.vue'
 const i18nStore = useI18nStore()
 
 /**
+ * Рекурсивно конвертирует BigInt в строки в объекте
+ * @param {any} value - Любое значение
+ * @returns {any} Значение с BigInt, преобразованными в строки
+ */
+const convertBigIntToString = (value) => {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+  if (Array.isArray(value)) {
+    return value.map(convertBigIntToString)
+  }
+  if (value !== null && typeof value === 'object') {
+    const result = {}
+    for (const key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        result[key] = convertBigIntToString(value[key])
+      }
+    }
+    return result
+  }
+  return value
+}
+
+/**
  * Безопасно логирует объект ошибки, конвертируя BigInt в строки
  * @param {Error} err - Объект ошибки
  * @returns {Object} Объект для логирования без BigInt
@@ -279,10 +303,17 @@ const safeLogError = (err) => {
     message: err.message,
     code: err.code,
     cause: err.cause ? safeLogError(err.cause) : undefined,
-    data: err.data ? JSON.stringify(err.data, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ) : undefined
+    data: err.data ? convertBigIntToString(err.data) : undefined
   }
+}
+
+/**
+ * Безопасно логирует любой объект, конвертируя BigInt в строки
+ * @param {any} obj - Любой объект для логирования
+ * @returns {any} Объект с BigInt, преобразованными в строки
+ */
+const safeLogObject = (obj) => {
+  return convertBigIntToString(obj)
 }
 
 // Получаем wallet store
@@ -519,7 +550,7 @@ const workTokenDisplayName = computed(() => {
 watch(
   [paidBalance, workBalance, lockedTokens, paidTokenName, paidTokenSymbol, workTokenName, workTokenSymbol, paidDecimals, workDecimals, balancesLoading, balancesError],
   ([newPaid, newWork, newLocked, newPaidName, newPaidSymbol, newWorkName, newWorkSymbol, newPaidDecimals, newWorkDecimals, newLoading, newError]) => {
-    console.log('[LandingPage] Watch сработал - ДЕБАГ БАЛАНСОВ:', {
+    console.log('[LandingPage] Watch сработал - ДЕБАГ БАЛАНСОВ:', safeLogObject({
       timestamp: new Date().toISOString(),
       newPaid: newPaid?.toString(),
       newWork: newWork?.toString(),
@@ -542,7 +573,7 @@ watch(
       formattedPaid: wallet.formattedPaidBalance,
       formattedWork: wallet.formattedWorkBalance,
       formattedLocked: wallet.formattedLockedTokens
-    })
+    }))
     
     // Обновляем wallet store только когда загрузка завершена
     // Это предотвращает обновление с неполными данными (например, когда decimals еще не загружены)
