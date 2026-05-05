@@ -205,8 +205,37 @@ export function useWalletConnect() {
   const isConnecting = ref(false)
   const isWalletDialogOpen = ref(false)
 
+  // Ключ localStorage для хранения флага автоматического открытия
+  const AUTO_OPEN_STORAGE_KEY = 'cxbt-wallet-auto-opened'
+
+  // Функция для получения сохранённого флага из localStorage
+  const getHasAutoOpened = () => {
+    try {
+      const saved = localStorage.getItem(AUTO_OPEN_STORAGE_KEY)
+      return saved === 'true'
+    } catch (e) {
+      console.warn('[useWalletConnect] Ошибка чтения из localStorage:', e)
+      return false
+    }
+  }
+
+  // Функция для сохранения флага в localStorage
+  const setHasAutoOpened = (value) => {
+    try {
+      localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(value))
+    } catch (e) {
+      console.warn('[useWalletConnect] Ошибка записи в localStorage:', e)
+    }
+  }
+
+  // Функция для сброса флага (вызывается при явном отключении кошелька)
+  const resetAutoOpenedFlag = () => {
+    setHasAutoOpened(false)
+  }
+
   // Флаг для предотвращения повторных автоматических открытий
-  const hasAutoOpened = ref(false)
+  // Инициализируем из localStorage
+  const hasAutoOpened = ref(getHasAutoOpened())
 
   // Настройка автоматического открытия (можно отключить через переменную окружения)
   const shouldAutoOpen = import.meta.env.VITE_AUTO_OPEN_WALLET_CONNECTOR !== 'false'
@@ -507,6 +536,7 @@ export function useWalletConnect() {
       console.log('[WalletConnect] onMounted - !walletStore.isConnected:', !walletStore.isConnected)
       console.log('[WalletConnect] onMounted - ПРОВЕРКА: Все условия ИСТИННЫ, открываем модальное окно')
       hasAutoOpened.value = true
+      setHasAutoOpened(true) // Сохраняем в localStorage
       try {
         await open()
         console.log('[WalletConnect] Модальное окно автоматически открыто')
@@ -552,6 +582,9 @@ export function useWalletConnect() {
       const modal = getWeb3Modal()
       modal.close()
       isWalletDialogOpen.value = false
+      // Сбрасываем флаг автоматического открытия при отключении
+      resetAutoOpenedFlag()
+      console.log('[WalletConnect] disconnect - Флаг hasAutoOpened сброшен')
     } catch (error) {
       console.error('Ошибка отключения от кошелька:', error)
       throw error
