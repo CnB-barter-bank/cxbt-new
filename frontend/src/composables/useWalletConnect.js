@@ -343,16 +343,27 @@ export function useWalletConnect() {
 
   // Функция автоматического подключения при загрузке
   const autoReconnect = async () => {
+    console.log('[WalletConnect] autoReconnect - Начало выполнения')
+    console.log('[WalletConnect] autoReconnect - isConnected.value ДО reconnect:', isConnected.value)
+    console.log('[WalletConnect] autoReconnect - walletStore.isConnected ДО reconnect:', walletStore.isConnected)
+    
     try {
       const { reconnect } = await import('@wagmi/core')
+      console.log('[WalletConnect] autoReconnect - Вызываем reconnect(wagmiConfig)')
       await reconnect(wagmiConfig)
+      console.log('[WalletConnect] autoReconnect - reconnect завершён')
+      console.log('[WalletConnect] autoReconnect - isConnected.value ПОСЛЕ reconnect:', isConnected.value)
+      console.log('[WalletConnect] autoReconnect - walletStore.isConnected ПОСЛЕ reconnect:', walletStore.isConnected)
       
       // Проверяем сеть после автоматического подключения
       if (isConnected.value) {
+        console.log('[WalletConnect] autoReconnect - Кошелёк подключён, проверяем сеть')
         await ensureBaseNetwork()
+      } else {
+        console.log('[WalletConnect] autoReconnect - Кошелёк НЕ подключён')
       }
     } catch (error) {
-      console.error('Ошибка автоматического подключения к кошельку:', error)
+      console.error('[WalletConnect] Ошибка автоматического подключения к кошельку:', error)
     }
   }
 
@@ -361,6 +372,8 @@ export function useWalletConnect() {
     onChange(account) {
       console.log('[useWalletConnect] watchAccount onChange - Начало выполнения')
       console.log('[useWalletConnect] watchAccount onChange - account:', account)
+      console.log('[useWalletConnect] watchAccount onChange - address.value ДО обновления:', address.value)
+      console.log('[useWalletConnect] watchAccount onChange - isConnected.value ДО обновления:', isConnected.value)
       
       // Guard clause: если account равен null или undefined, или все поля undefined
       if (!account ||
@@ -376,6 +389,7 @@ export function useWalletConnect() {
         chain.value = undefined
         walletProvider.value = undefined
         
+        console.log('[useWalletConnect] watchAccount onChange - state ПОСЛЕ сброса - address:', address.value, 'isConnected:', isConnected.value)
         return
       }
       
@@ -407,6 +421,10 @@ export function useWalletConnect() {
       } else {
         walletProvider.value = undefined
       }
+      
+      console.log('[useWalletConnect] watchAccount onChange - address.value ПОСЛЕ обновления:', address.value)
+      console.log('[useWalletConnect] watchAccount onChange - isConnected.value ПОСЛЕ обновления:', isConnected.value)
+      console.log('[useWalletConnect] watchAccount onChange - chainId.value ПОСЛЕ обновления:', chainId.value)
     },
   })
 
@@ -457,10 +475,24 @@ export function useWalletConnect() {
 
   // Запуск автоматического подключения при монтировании
   onMounted(async () => {
+    console.log('[WalletConnect] onMounted - Начало выполнения')
+    console.log('[WalletConnect] onMounted - isConnected.value ДО autoReconnect:', isConnected.value)
+    console.log('[WalletConnect] onMounted - walletStore.isConnected:', walletStore.isConnected)
+    console.log('[WalletConnect] onMounted - walletStore.address:', walletStore.address)
+    console.log('[WalletConnect] onMounted - hasAutoOpened.value:', hasAutoOpened.value)
+    console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
+    
     await autoReconnect()
+    
+    console.log('[WalletConnect] onMounted - isConnected.value ПОСЛЕ autoReconnect:', isConnected.value)
+    console.log('[WalletConnect] onMounted - walletStore.isConnected ПОСЛЕ autoReconnect:', walletStore.isConnected)
     
     // Автоматическое открытие модального окна, если кошелек не подключен
     if (shouldAutoOpen && !hasAutoOpened.value && !isConnected.value) {
+      console.log('[WalletConnect] onMounted - Условия для открытия модального окна ВЫПОЛНЕНЫ')
+      console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
+      console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
+      console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
       hasAutoOpened.value = true
       try {
         await open()
@@ -468,6 +500,11 @@ export function useWalletConnect() {
       } catch (error) {
         console.error('[WalletConnect] Ошибка при автоматическом открытии:', error)
       }
+    } else {
+      console.log('[WalletConnect] onMounted - Условия для открытия модального окна НЕ выполнены')
+      console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
+      console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
+      console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
     }
   })
   
