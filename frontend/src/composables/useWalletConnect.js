@@ -396,13 +396,24 @@ export function useWalletConnect() {
     }
   }
 
+  // Глобальный счётчик срабатываний watchAccount для отладки
+  let watchAccountCallCount = 0
+  let lastWatchAccountTime = 0
+  
   // Слушатель событий для отслеживания изменений состояния аккаунта
   const unwatchAccount = watchAccount(wagmiConfig, {
     onChange(account) {
-      console.log('[useWalletConnect] watchAccount onChange - Начало выполнения')
-      console.log('[useWalletConnect] watchAccount onChange - account:', account)
-      console.log('[useWalletConnect] watchAccount onChange - address.value ДО обновления:', address.value)
-      console.log('[useWalletConnect] watchAccount onChange - isConnected.value ДО обновления:', isConnected.value)
+      watchAccountCallCount++
+      const now = Date.now()
+      const timeSinceLastWatch = lastWatchAccountTime ? now - lastWatchAccountTime : 0
+      lastWatchAccountTime = now
+      
+      console.log('[useWalletConnect] 👁️ watchAccount onChange сработал')
+      console.log('[useWalletConnect]   Номер вызова:', watchAccountCallCount)
+      console.log('[useWalletConnect]   Время с последнего вызова:', timeSinceLastWatch, 'ms')
+      console.log('[useWalletConnect]   account:', account)
+      console.log('[useWalletConnect]   address.value ДО обновления:', address.value)
+      console.log('[useWalletConnect]   isConnected.value ДО обновления:', isConnected.value)
       
       // Guard clause: если account равен null или undefined, или все поля undefined
       if (!account ||
@@ -418,7 +429,7 @@ export function useWalletConnect() {
         chain.value = undefined
         walletProvider.value = undefined
         
-        console.log('[useWalletConnect] watchAccount onChange - state ПОСЛЕ сброса - address:', address.value, 'isConnected:', isConnected.value)
+        console.log('[useWalletConnect]   state ПОСЛЕ сброса - address:', address.value, 'isConnected:', isConnected.value)
         return
       }
       
@@ -451,9 +462,9 @@ export function useWalletConnect() {
         walletProvider.value = undefined
       }
       
-      console.log('[useWalletConnect] watchAccount onChange - address.value ПОСЛЕ обновления:', address.value)
-      console.log('[useWalletConnect] watchAccount onChange - isConnected.value ПОСЛЕ обновления:', isConnected.value)
-      console.log('[useWalletConnect] watchAccount onChange - chainId.value ПОСЛЕ обновления:', chainId.value)
+      console.log('[useWalletConnect]   address.value ПОСЛЕ обновления:', address.value)
+      console.log('[useWalletConnect]   isConnected.value ПОСЛЕ обновления:', isConnected.value)
+      console.log('[useWalletConnect]   chainId.value ПОСЛЕ обновления:', chainId.value)
     },
   })
 

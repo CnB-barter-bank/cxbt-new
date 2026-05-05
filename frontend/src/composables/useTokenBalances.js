@@ -2,6 +2,20 @@ import { ref, computed, watch } from 'vue'
 import { readContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
 
+/**
+ * Создаёт debounced версию функции
+ * @param {Function} fn - Функция для debounce
+ * @param {number} delay - Задержка в миллисекундах
+ * @returns {Function} Debounced функция
+ */
+function debounce(fn, delay) {
+  let timeoutId
+  return function (...args) {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+
 // ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
   {
@@ -72,6 +86,56 @@ const cxbtAbi = [
  * @param {Ref<string>|string} address - Адрес пользователя
  * @returns {Object} Объект с реактивными значениями балансов и функциями
  */
+// Глобальный счётчик вызовов fetchBalances для отладки
+let fetchBalancesCallCount = 0
+let lastFetchBalancesTime = 0
+
+// Кэш для балансов (ключ: адрес, значение: { data, timestamp })
+const balancesCache = new Map()
+const CACHE_TTL = 30000 // 30 секунд TTL для кэша
+
+/**
+ * Получает кэшированные балансы для адреса
+ * @param {string} address - Адрес кошелька
+ * @returns {Object|null} Кэшированные данные или null
+ */
+function getCachedBalances(address) {
+  const cached = balancesCache.get(address)
+  if (!cached) return null
+  
+  const now = Date.now()
+  if (now - cached.timestamp > CACHE_TTL) {
+    console.log('[useTokenBalances] Кэш устарел для адреса:', address)
+    balancesCache.delete(address)
+    return null
+  }
+  
+  console.log('[useTokenBalances] Используем кэшированные балансы для адреса:', address)
+  return cached.data
+}
+
+/**
+ * Сохраняет балансы в кэш
+ * @param {string} address - Адрес кошелька
+ * @param {Object} data - Данные балансов
+ */
+function setCachedBalances(address, data) {
+  console.log('[useTokenBalances] Сохраняем балансы в кэш для адреса:', address)
+  balancesCache.set(address, {
+    data,
+    timestamp: Date.now()
+  })
+}
+
+/**
+ * Очищает кэш для адреса
+ * @param {string} address - Адрес кошелька
+ */
+function clearCachedBalances(address) {
+  console.log('[useTokenBalances] Очищаем кэш для адреса:', address)
+  balancesCache.delete(address)
+}
+
 export function useTokenBalances(address) {
   console.log('[useTokenBalances] Инициализация composable')
   console.log('[useTokenBalances] Параметр address:', address)
@@ -90,6 +154,9 @@ export function useTokenBalances(address) {
   const isLoading = ref(false)
   const error = ref(null)
   const criticalError = ref(null)
+  
+  // Флаг для предотвращения параллельных вызовов
+  const isFetching = ref(false)
 
   // Получаем адреса контрактов из переменных окружения
   const workTokenAddress = import.meta.env.VITE_WORK_TOKEN_ADDRESS
@@ -235,14 +302,51 @@ export function useTokenBalances(address) {
 
   /**
    * Функция для принудительного обновления всех балансов
+   * @param {boolean} force - Принудительное обновление, игнорируя кэш
    */
-  const fetchBalances = async () => {
+  const fetchBalances = async (force = false) => {
     // Получаем текущее значение адреса
     const currentAddress = typeof address === 'function' ? address() : address.value
 
+    // Отладочное логирование
+    fetchBalancesCallCount++
+    const now = Date.now()
+    const timeSinceLastFetch = lastFetchBalancesTime ? now - lastFetchBalancesTime : 0
+    lastFetchBalancesTime = now
+    
     console.log('[useTokenBalances] fetchBalances вызван')
+    console.log('[useTokenBalances] Номер вызова:', fetchBalancesCallCount)
+    console.log('[useTokenBalances] Время с последнего вызова:', timeSinceLastFetch, 'ms')
     console.log('[useTokenBalances] currentAddress:', currentAddress)
     console.log('[useTokenBalances] isConfigured.value:', isConfigured.value)
+    console.log('[useTokenBalances] isFetching.value:', isFetching.value)
+    console.log('[useTokenBalances] isLoading.value:', isLoading.value)
+    
+    // Проверяем кэш, если не принудительное обновление
+    if (!force) {
+      const cached = getCachedBalances(currentAddress)
+      if (cached) {
+        console.log('[useTokenBalances] 📦 Используем кэшированные данные (вызов #' + fetchBalancesCallCount + ')')
+        paidBalance.value = cached.paidBalance
+        workBalance.value = cached.workBalance
+        lockedTokens.value = cached.lockedTokens
+        paidTokenName.value = cached.paidTokenName
+        paidTokenSymbol.value = cached.paidTokenSymbol
+        workTokenName.value = cached.workTokenName
+        workTokenSymbol.value = cached.workTokenSymbol
+        paidDecimals.value = cached.paidDecimals
+        workDecimals.value = cached.workDecimals
+        error.value = null
+        criticalError.value = null
+        return
+      }
+    }
+    
+    // Предотвращаем параллельные вызовы
+    if (isFetching.value) {
+      console.warn('[useTokenBalances] ⚠️ ПРЕДУПРЕЖДЕНИЕ: fetchBalances уже выполняется, пропускаем вызов #', fetchBalancesCallCount)
+      return
+    }
 
     // Если адрес не задан или контракты не настроены, выходим
     if (!currentAddress || !isConfigured.value) {
@@ -254,8 +358,11 @@ export function useTokenBalances(address) {
       return
     }
 
+    isFetching.value = true
     isLoading.value = true
     error.value = null
+    
+    console.log('[useTokenBalances] 🚀 Начинаем загрузку балансов (вызов #' + fetchBalancesCallCount + ')')
 
     try {
       console.log('[useTokenBalances] Начинаем получать балансы и метаданные...')
@@ -341,29 +448,64 @@ export function useTokenBalances(address) {
     } catch (err) {
       error.value = err
       criticalError.value = err
-      console.error('[useTokenBalances] Ошибка при получении балансов:', err)
+      console.error('[useTokenBalances] ❌ Ошибка при получении балансов:', err)
       console.error('[useTokenBalances] Stack trace:', err.stack)
     } finally {
+      isFetching.value = false
       isLoading.value = false
+      console.log('[useTokenBalances] ✅ Завершена загрузка балансов (вызов #' + fetchBalancesCallCount + ')')
+    }
+    
+    // Сохраняем успешный результат в кэш
+    if (!error.value && !criticalError.value) {
+      setCachedBalances(currentAddress, {
+        paidBalance: paidBalance.value,
+        workBalance: workBalance.value,
+        lockedTokens: lockedTokens.value,
+        paidTokenName: paidTokenName.value,
+        paidTokenSymbol: paidTokenSymbol.value,
+        workTokenName: workTokenName.value,
+        workTokenSymbol: workTokenSymbol.value,
+        paidDecimals: paidDecimals.value,
+        workDecimals: workDecimals.value
+      })
     }
   }
 
+  // Debounced версия fetchBalances для предотвращения множественных быстрых вызовов
+  const debouncedFetchBalances = debounce(fetchBalances, 500)
+  
   // Следим за изменением адреса и автоматически обновляем балансы
   watch(
     () => (typeof address === 'function' ? address() : address.value),
-    (newAddress) => {
-      console.log('[useTokenBalances] Watch сработал, newAddress:', newAddress)
-      console.log('[useTokenBalances] isConfigured.value:', isConfigured.value)
+    (newAddress, oldAddress) => {
+      console.log('[useTokenBalances] 👁️ Watch сработал')
+      console.log('[useTokenBalances]   newAddress:', newAddress)
+      console.log('[useTokenBalances]   oldAddress:', oldAddress)
+      console.log('[useTokenBalances]   isConfigured.value:', isConfigured.value)
+      console.log('[useTokenBalances]   isFetching.value:', isFetching.value)
+      
       if (newAddress && isConfigured.value) {
-        console.log('[useTokenBalances] Вызываем fetchBalances()')
-        fetchBalances()
+        console.log('[useTokenBalances]   → Вызываем debouncedFetchBalances()')
+        debouncedFetchBalances()
       } else {
-        console.log('[useTokenBalances] Пропускаем fetchBalances - newAddress или isConfigured отсутствуют')
+        console.log('[useTokenBalances]   → Пропускаем fetchBalances - newAddress или isConfigured отсутствуют')
       }
     },
     { immediate: true }
   )
 
+  // Следим за изменением адреса и очищаем кэш при отключении
+  watch(
+    () => (typeof address === 'function' ? address() : address.value),
+    (newAddress, oldAddress) => {
+      if (!newAddress && oldAddress) {
+        console.log('[useTokenBalances] Кошелёк отключён, очищаем кэш для:', oldAddress)
+        clearCachedBalances(oldAddress)
+      }
+    }
+  )
+  
   // Возвращаем реактивные значения и функции
   return {
     paidBalance,
@@ -379,6 +521,7 @@ export function useTokenBalances(address) {
     error,
     criticalError,
     fetchBalances,
-    isConfigured
+    isConfigured,
+    isFetching
   }
 }

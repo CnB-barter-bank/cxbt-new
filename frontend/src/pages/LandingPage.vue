@@ -448,8 +448,8 @@ const handleUnlock = async () => {
     unlockAmount.value = 0
     unlockCost.value = 0n
     
-    // Обновляем балансы
-    await fetchBalances()
+    // Обновляем балансы принудительно (игнорируя кэш)
+    await fetchBalances(true)
   } catch (err) {
     console.error('[LandingPage] Ошибка разблокировки токенов:', safeLogError(err))
     
@@ -592,7 +592,7 @@ const formatBalance = (value) => {
 
 // Обработчик кнопки обновления
 const handleRefresh = async () => {
-  await fetchBalances()
+  await fetchBalances(true) // Принудительное обновление, игнорируя кэш
 }
 
 // Обработчик перевода токенов
@@ -620,8 +620,8 @@ const handleTransfer = async () => {
     transferSuccess.value = true
     transferForm.value.recipientAddress = ''
     transferForm.value.amount = ''
-    // Обновить балансы
-    await fetchBalances()
+    // Обновить балансы принудительно (игнорируя кэш)
+    await fetchBalances(true)
   } catch (error) {
     console.error('[LandingPage] Ошибка при переводе токенов:', safeLogError(error))
     
