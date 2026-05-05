@@ -487,12 +487,21 @@ export function useWalletConnect() {
     console.log('[WalletConnect] onMounted - isConnected.value ПОСЛЕ autoReconnect:', isConnected.value)
     console.log('[WalletConnect] onMounted - walletStore.isConnected ПОСЛЕ autoReconnect:', walletStore.isConnected)
     
+    // Добавляем небольшую задержку, чтобы дать watchAccount время обновить состояние
+    // Это решает проблему гонки условий при обновлении страницы
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    console.log('[WalletConnect] onMounted - isConnected.value ПОСЛЕ задержки:', isConnected.value)
+    console.log('[WalletConnect] onMounted - walletStore.isConnected ПОСЛЕ задержки:', walletStore.isConnected)
+    
     // Автоматическое открытие модального окна, если кошелек не подключен
-    if (shouldAutoOpen && !hasAutoOpened.value && !isConnected.value) {
+    // Проверяем и локальное состояние, и wallet store для большей надежности
+    if (shouldAutoOpen && !hasAutoOpened.value && !isConnected.value && !walletStore.isConnected) {
       console.log('[WalletConnect] onMounted - Условия для открытия модального окна ВЫПОЛНЕНЫ')
       console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
       console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
       console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
+      console.log('[WalletConnect] onMounted - !walletStore.isConnected:', !walletStore.isConnected)
       hasAutoOpened.value = true
       try {
         await open()
@@ -505,6 +514,7 @@ export function useWalletConnect() {
       console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
       console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
       console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
+      console.log('[WalletConnect] onMounted - !walletStore.isConnected:', !walletStore.isConnected)
     }
   })
   
