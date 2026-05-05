@@ -364,6 +364,15 @@ export function useWalletConnect() {
       console.log('[useWalletConnect] watchAccount onChange - account:', account)
       console.log('[useWalletConnect] watchAccount onChange - account.connector:', account?.connector)
       
+      // [DIAGNOSTIC LOGS] Проверка типа account и его полей
+      console.log('[DIAGNOSTIC] typeof account:', typeof account)
+      console.log('[DIAGNOSTIC] account === null:', account === null)
+      console.log('[DIAGNOSTIC] account === undefined:', account === undefined)
+      console.log('[DIAGNOSTIC] account.address:', account?.address)
+      console.log('[DIAGNOSTIC] account.chainId:', account?.chainId)
+      console.log('[DIAGNOSTIC] account.chain:', account?.chain)
+      console.log('[DIAGNOSTIC] account.connector:', account?.connector)
+      
       // Проверяем наличие методов на connector
       if (account?.connector) {
         console.log('[useWalletConnect] watchAccount onChange - Методы connector:', Object.getOwnPropertyNames(Object.getPrototypeOf(account.connector)))
@@ -374,13 +383,27 @@ export function useWalletConnect() {
         console.log('[useWalletConnect] watchAccount onChange - account.chainId:', account.chainId)
       }
       
+      // [DIAGNOSTIC LOGS] Перед присваиванием значений
+      console.log('[DIAGNOSTIC] Перед присваиванием - address.value:', address.value)
+      console.log('[DIAGNOSTIC] Перед присваиванием - isConnected.value:', isConnected.value)
+      console.log('[DIAGNOSTIC] Перед присваиванием - chainId.value:', chainId.value)
+      console.log('[DIAGNOSTIC] Перед присваиванием - chain.value:', chain.value)
+      console.log('[DIAGNOSTIC] Перед присваиванием - walletProvider.value:', walletProvider.value)
+      
       address.value = account.address
       isConnected.value = !!account.address
       chainId.value = account.chainId
       chain.value = account.chain
       
+      // [DIAGNOSTIC LOGS] После присваивания значений
+      console.log('[DIAGNOSTIC] После присваивания - address.value:', address.value)
+      console.log('[DIAGNOSTIC] После присваивания - isConnected.value:', isConnected.value)
+      console.log('[DIAGNOSTIC] После присваивания - chainId.value:', chainId.value)
+      console.log('[DIAGNOSTIC] После присваивания - chain.value:', chain.value)
+      
       // Получаем public client для провайдера (используем getPublicClient вместо getConnectorClient)
       // getConnectorClient требует параметр account и может вызывать ошибки при раннем вызове
+      console.log('[DIAGNOSTIC] Условие для getPublicClient - isConnected.value:', isConnected.value, 'account.chainId:', account.chainId)
       if (isConnected.value && account.chainId) {
         try {
           const publicClient = getPublicClient(wagmiConfig, { chainId: account.chainId })
@@ -390,6 +413,7 @@ export function useWalletConnect() {
           console.error('[useWalletConnect] Ошибка при получении public client в watchAccount:', error)
         }
       } else {
+        console.log('[DIAGNOSTIC] Условие не выполнено, устанавливаем walletProvider.value = undefined')
         walletProvider.value = undefined
       }
     },
