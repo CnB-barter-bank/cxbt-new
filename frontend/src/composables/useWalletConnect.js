@@ -481,6 +481,7 @@ export function useWalletConnect() {
     console.log('[WalletConnect] onMounted - walletStore.address:', walletStore.address)
     console.log('[WalletConnect] onMounted - hasAutoOpened.value:', hasAutoOpened.value)
     console.log('[WalletConnect] onMounted - shouldAutoOpen:', shouldAutoOpen)
+    console.log('[WalletConnect] onMounted - localStorage wallet data:', localStorage.getItem('cxbt-wallet'))
     
     await autoReconnect()
     
@@ -493,6 +494,8 @@ export function useWalletConnect() {
     
     console.log('[WalletConnect] onMounted - isConnected.value ПОСЛЕ задержки:', isConnected.value)
     console.log('[WalletConnect] onMounted - walletStore.isConnected ПОСЛЕ задержки:', walletStore.isConnected)
+    console.log('[WalletConnect] onMounted - address.value:', address.value)
+    console.log('[WalletConnect] onMounted - walletStore.address:', walletStore.address)
     
     // Автоматическое открытие модального окна, если кошелек не подключен
     // Проверяем и локальное состояние, и wallet store для большей надежности
@@ -502,6 +505,7 @@ export function useWalletConnect() {
       console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
       console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
       console.log('[WalletConnect] onMounted - !walletStore.isConnected:', !walletStore.isConnected)
+      console.log('[WalletConnect] onMounted - ПРОВЕРКА: Все условия ИСТИННЫ, открываем модальное окно')
       hasAutoOpened.value = true
       try {
         await open()
@@ -515,6 +519,7 @@ export function useWalletConnect() {
       console.log('[WalletConnect] onMounted - !hasAutoOpened.value:', !hasAutoOpened.value)
       console.log('[WalletConnect] onMounted - !isConnected.value:', !isConnected.value)
       console.log('[WalletConnect] onMounted - !walletStore.isConnected:', !walletStore.isConnected)
+      console.log('[WalletConnect] onMounted - ПРОВЕРКА: Условие ЛОЖНО, модальное окно НЕ открывается')
     }
   })
   
