@@ -477,8 +477,7 @@ export function useWalletConnect() {
       } else {
         walletStore.disconnect()
       }
-    },
-    { immediate: true }
+    }
   )
 
   watch(
