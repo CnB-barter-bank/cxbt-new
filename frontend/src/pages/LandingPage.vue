@@ -265,56 +265,9 @@ import { useTokenTransfer } from '../composables/useTokenTransfer'
 import { Notify, debounce } from 'quasar'
 import { parseUnits } from 'viem'
 import ErrorPopup from '../components/ErrorPopup.vue'
+import { safeLogError, safeLogObject } from '../utils/serializer'
 
 const i18nStore = useI18nStore()
-
-/**
- * Рекурсивно конвертирует BigInt в строки в объекте
- * @param {any} value - Любое значение
- * @returns {any} Значение с BigInt, преобразованными в строки
- */
-const convertBigIntToString = (value) => {
-  if (typeof value === 'bigint') {
-    return value.toString()
-  }
-  if (Array.isArray(value)) {
-    return value.map(convertBigIntToString)
-  }
-  if (value !== null && typeof value === 'object') {
-    const result = {}
-    for (const key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key)) {
-        result[key] = convertBigIntToString(value[key])
-      }
-    }
-    return result
-  }
-  return value
-}
-
-/**
- * Безопасно логирует объект ошибки, конвертируя BigInt в строки
- * @param {Error} err - Объект ошибки
- * @returns {Object} Объект для логирования без BigInt
- */
-const safeLogError = (err) => {
-  return {
-    name: err.name,
-    message: err.message,
-    code: err.code,
-    cause: err.cause ? safeLogError(err.cause) : undefined,
-    data: err.data ? convertBigIntToString(err.data) : undefined
-  }
-}
-
-/**
- * Безопасно логирует любой объект, конвертируя BigInt в строки
- * @param {any} obj - Любой объект для логирования
- * @returns {any} Объект с BigInt, преобразованными в строки
- */
-const safeLogObject = (obj) => {
-  return convertBigIntToString(obj)
-}
 
 // Получаем wallet store
 const wallet = useWalletStore()

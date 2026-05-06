@@ -2,26 +2,10 @@ import { ref, computed } from 'vue'
 import { readContract, writeContract, simulateContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
 import { Notify } from 'quasar'
+import { safeLogError } from '../utils/serializer'
 
 // Кэш для хранения результатов calculateUnlockCost
 const unlockCostCache = new Map()
-
-/**
- * Безопасно логирует объект ошибки, конвертируя BigInt в строки
- * @param {Error} err - Объект ошибки
- * @returns {Object} Объект для логирования без BigInt
- */
-const safeLogError = (err) => {
-  return {
-    name: err.name,
-    message: err.message,
-    code: err.code,
-    cause: err.cause ? safeLogError(err.cause) : undefined,
-    data: err.data ? JSON.stringify(err.data, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ) : undefined
-  }
-}
 
 // ABI для CXBT контракта (функции разблокировки)
 const cxbtAbi = [

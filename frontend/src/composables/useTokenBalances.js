@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { readContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
+import { safeLogError, safeLogObject } from '../utils/serializer'
 
 /**
  * Создаёт debounced версию функции
@@ -185,7 +186,7 @@ export function useTokenBalances(address) {
       })
       return balance
     } catch (err) {
-      console.error(`[useTokenBalances] Ошибка получения баланса токена ${tokenAddress}:`, err)
+      console.error(`[useTokenBalances] Ошибка получения баланса токена ${tokenAddress}:`, safeLogError(err))
       throw err
     }
   }
@@ -201,7 +202,7 @@ export function useTokenBalances(address) {
       })
       return balance
     } catch (err) {
-      console.error(`[useTokenBalances] Ошибка получения разблокированного баланса токена ${tokenAddress}:`, err)
+      console.error(`[useTokenBalances] Ошибка получения разблокированного баланса токена ${tokenAddress}:`, safeLogError(err))
       throw err
     }
   }
@@ -216,7 +217,7 @@ export function useTokenBalances(address) {
       })
       return address
     } catch (err) {
-      console.error('[useTokenBalances] Ошибка получения адреса PAID токена:', err)
+      console.error('[useTokenBalances] Ошибка получения адреса PAID токена:', safeLogError(err))
       throw err
     }
   }
@@ -235,7 +236,7 @@ export function useTokenBalances(address) {
         args: [userAddress]
       })
       
-      console.log('[useTokenBalances] Результат getTokenBalances:', balances)
+      console.log('[useTokenBalances] Результат getTokenBalances:', safeLogObject(balances))
       console.log('  - Тип результата:', Array.isArray(balances) ? 'Array' : typeof balances)
       
       // Обработка случая, когда возвращается массив вместо объекта
@@ -258,7 +259,7 @@ export function useTokenBalances(address) {
       
       return normalizedBalances
     } catch (err) {
-      console.error('[useTokenBalances] Ошибка получения балансов из Diamond:', err)
+      console.error('[useTokenBalances] Ошибка получения балансов из Diamond:', safeLogError(err))
       console.error('[useTokenBalances] Stack trace:', err.stack)
       throw err
     }
@@ -295,7 +296,7 @@ export function useTokenBalances(address) {
       console.log('  - decimals:', decimals)
       return { name, symbol, decimals }
     } catch (err) {
-      console.error(`[useTokenBalances] Ошибка получения метаданных токена ${tokenAddress}:`, err)
+      console.error(`[useTokenBalances] Ошибка получения метаданных токена ${tokenAddress}:`, safeLogError(err))
       throw err
     }
   }
@@ -394,10 +395,10 @@ export function useTokenBalances(address) {
       console.log('[useTokenBalances] Результаты readContract:')
       console.log('  - paidBalance:', paid?.toString())
       console.log('  - workBalance:', work?.toString())
-      console.log('  - diamondBalances:', diamondBalances)
-      console.log('  - diamondBalances.locked:', diamondBalances?.locked)
-      console.log('  - diamondBalances.unlocked:', diamondBalances?.unlocked)
-      console.log('  - diamondBalances.total:', diamondBalances?.total)
+      console.log('  - diamondBalances:', safeLogObject(diamondBalances))
+      console.log('  - diamondBalances.locked:', diamondBalances?.locked?.toString())
+      console.log('  - diamondBalances.unlocked:', diamondBalances?.unlocked?.toString())
+      console.log('  - diamondBalances.total:', diamondBalances?.total?.toString())
 
       // Получаем метаданные токенов отдельно с обработкой ошибок для каждого токена
       let paidMetadata = { name: '', symbol: '', decimals: 18 }
@@ -406,7 +407,7 @@ export function useTokenBalances(address) {
       try {
         paidMetadata = await fetchTokenMetadata(paidTokenAddress.value)
       } catch (err) {
-        console.error('[useTokenBalances] Не удалось получить метаданные PAID токена:', err)
+        console.error('[useTokenBalances] Не удалось получить метаданные PAID токена:', safeLogError(err))
         criticalError.value = err
         return
       }
@@ -414,7 +415,7 @@ export function useTokenBalances(address) {
       try {
         workMetadata = await fetchTokenMetadata(workTokenAddress)
       } catch (err) {
-        console.error('[useTokenBalances] Не удалось получить метаданные WORK токена:', err)
+        console.error('[useTokenBalances] Не удалось получить метаданные WORK токена:', safeLogError(err))
         criticalError.value = err
         return
       }
@@ -434,7 +435,7 @@ export function useTokenBalances(address) {
       workTokenSymbol.value = workMetadata.symbol
       workDecimals.value = workMetadata.decimals
 
-      console.log('[useTokenBalances] Балансы успешно обновлены:', {
+      console.log('[useTokenBalances] Балансы успешно обновлены:', safeLogObject({
         paid: paid.toString(),
         work: work.toString(),
         locked: lockedTokens.value.toString(),
@@ -444,11 +445,11 @@ export function useTokenBalances(address) {
         workTokenName: workMetadata.name,
         workTokenSymbol: workMetadata.symbol,
         workDecimals: workMetadata.decimals
-      })
+      }))
     } catch (err) {
       error.value = err
       criticalError.value = err
-      console.error('[useTokenBalances] ❌ Ошибка при получении балансов:', err)
+      console.error('[useTokenBalances] ❌ Ошибка при получении балансов:', safeLogError(err))
       console.error('[useTokenBalances] Stack trace:', err.stack)
     } finally {
       isFetching.value = false

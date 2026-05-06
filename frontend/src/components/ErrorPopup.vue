@@ -30,6 +30,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { copyToClipboard } from 'quasar'
+import { safeJSONStringify } from '../utils/serializer'
 
 const props = defineProps({
   error: {
@@ -48,33 +49,18 @@ const formattedError = computed(() => {
   }
   
   if (props.error instanceof Error) {
-    return JSON.stringify({
+    return safeJSONStringify({
       name: props.error.name,
       message: props.error.message,
       code: props.error.code,
       cause: props.error.cause ? String(props.error.cause) : undefined,
-      data: props.error.data ? JSON.stringify(props.error.data, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-      ) : undefined,
+      data: props.error.data,
       stack: props.error.stack
-    }, null, 2)
+    })
   }
   
   // Для других объектов
-  return JSON.stringify(props.error, (key, value) => {
-    if (typeof value === 'bigint') {
-      return value.toString()
-    }
-    if (value instanceof Error) {
-      return {
-        name: value.name,
-        message: value.message,
-        code: value.code,
-        stack: value.stack
-      }
-    }
-    return value
-  }, 2)
+  return safeJSONStringify(props.error)
 })
 
 const copyError = async () => {

@@ -8,6 +8,7 @@ import { QueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useWalletStore } from '../stores/wallet'
 import { Notify } from 'quasar'
+import { safeStringifyArgs } from '../utils/serializer'
 
 // Константы сети Base
 export const BASE_CHAIN_ID = 8453
@@ -130,10 +131,14 @@ export { web3Modal, getWeb3Modal, initializeWeb3Modal }
 // Глобальный обработчик ошибок для отслеживания connector.getChainId
 const originalError = console.error
 console.error = function(...args) {
-  const errorStr = JSON.stringify(args)
-  if (errorStr.includes('getChainId') && errorStr.includes('not a function')) {
-    console.error('[GLOBAL ERROR HANDLER] Обнаружена ошибка "getChainId is not a function":', args)
-    console.error('[GLOBAL ERROR HANDLER] Stack trace:', new Error().stack)
+  try {
+    const errorStr = safeStringifyArgs(args)
+    if (errorStr.includes('getChainId') && errorStr.includes('not a function')) {
+      console.error('[GLOBAL ERROR HANDLER] Обнаружена ошибка "getChainId is not a function":', args)
+      console.error('[GLOBAL ERROR HANDLER] Stack trace:', new Error().stack)
+    }
+  } catch (e) {
+    // Игнорируем ошибки сериализации
   }
   originalError.apply(console, args)
 }

@@ -1,22 +1,6 @@
 import { writeContract } from '@wagmi/core'
 import { wagmiConfig } from './useWalletConnect'
-
-/**
- * Безопасно логирует объект ошибки, конвертируя BigInt в строки
- * @param {Error} err - Объект ошибки
- * @returns {Object} Объект для логирования без BigInt
- */
-const safeLogError = (err) => {
-  return {
-    name: err.name,
-    message: err.message,
-    code: err.code,
-    cause: err.cause ? safeLogError(err.cause) : undefined,
-    data: err.data ? JSON.stringify(err.data, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ) : undefined
-  }
-}
+import { safeLogError } from '../utils/serializer'
 
 // ABI для ERC20 токена (функция transfer)
 const erc20TransferAbi = [
