@@ -1,6 +1,7 @@
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
+const { safeJSONStringify } = require("../../frontend/src/utils/serializer");
 require("dotenv").config();
 
 // Функция ожидания между транзакциями
@@ -328,7 +329,7 @@ async function main() {
 
   // Сохраняем в файл
   const deploymentFile = path.join(deploymentsDir, `${hre.network.name}.json`);
-  fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
+  fs.writeFileSync(deploymentFile, safeJSONStringify(deploymentInfo, null, 2));
   console.log("   ✓ Информация о деплое сохранена в:", deploymentFile);
 
   // ==================== Шаг 6: Вывод адресов и верификация ====================

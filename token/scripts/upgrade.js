@@ -1,6 +1,7 @@
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
+const { safeJSONStringify } = require("../../frontend/src/utils/serializer");
 require("dotenv").config();
 
 // Функция ожидания между транзакциями
@@ -471,7 +472,7 @@ async function main() {
     console.log(`\n  [DEBUG] Подробная информация о cuts:`);
     console.log(`    - Общее количество операций: ${cuts.length}`);
     console.log(`    - Содержимое массива cuts (JSON):`);
-    console.log(JSON.stringify(cuts.map(c => ({
+    console.log(safeJSONStringify(cuts.map(c => ({
       action: c.action === 0 ? 'ADD' : c.action === 1 ? 'REPLACE' : 'REMOVE',
       facetAddress: c.facetAddress,
       functionSelectors: c.functionSelectors.map(s => `'${s}'`)
@@ -619,7 +620,7 @@ async function main() {
   deploymentInfo.upgradeCount = (deploymentInfo.upgradeCount || 0) + 1;
 
   // Сохраняем обновленную информацию
-  fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
+  fs.writeFileSync(deploymentFile, safeJSONStringify(deploymentInfo, null, 2));
   console.log("✓ Обновленная информация сохранена в:", deploymentFile);
 
   console.log("\n--- Обновление Diamond завершено успешно ---");

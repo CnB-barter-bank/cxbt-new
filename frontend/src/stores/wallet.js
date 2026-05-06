@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-
+import { safeJSONStringify } from '../utils/serializer'
 export const useWalletStore = defineStore('wallet', () => {
   const STORAGE_KEY = 'cxbt-wallet'
 
@@ -42,7 +42,7 @@ export const useWalletStore = defineStore('wallet', () => {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({
+        safeJSONStringify({
           address: address.value,
           isConnected: isConnected.value,
           chainId: chainId.value,
