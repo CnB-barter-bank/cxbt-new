@@ -246,28 +246,34 @@ contract ERC20Facet is IERC20Facet {
         
         ERC20Storage storage s = ds();
         
+        // Проверяем, что у отправителя достаточно токенов
+        uint256 fromBalance = s._balances[from];
+        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        
         // Если отправитель в белом списке, он может переводить любые токены
         // Иначе проверяем unlockedBalance отправителя (можно перевести только разблокированные токены)
         bool fromWhitelisted = _isWhitelisted(from);
         if (!fromWhitelisted) {
             uint256 fromUnlocked = s._unlockedBalance[from];
             require(fromUnlocked >= amount, "ERC20: transfer amount exceeds unlocked balance");
+            // Списываем ИЗ _balances И ИЗ _unlockedBalance (переводим разблокированные токены)
+            s._balances[from] -= amount;
             s._unlockedBalance[from] = fromUnlocked - amount;
         } else {
-            // Если отправитель в белом списке, списываем из unlockedBalance если есть, иначе из общего баланса
-            uint256 fromBalance = s._balances[from];
-            require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+            // Если отправитель в белом списке, он может переводить любые токены
+            // Списываем только из _balances
+            s._balances[from] -= amount;
+            // _unlockedBalance НЕ изменяется, потому что переводим из общего баланса (можем переводить и locked, и unlocked)
         }
         
-        // Обновляем общий баланс
-        s._balances[from] -= amount;
+        // Добавляем токены получателю
         s._balances[to] += amount;
         
         // Если получатель в белом списке, он получает токены как разблокированные
         if (_isWhitelisted(to)) {
             s._unlockedBalance[to] += amount;
         }
-        // Иначе получатель получает токены в общем балансе, но НЕ в unlockedBalance (заблокированы)
+        // Иначе получатель получает токены как заблокированные
         // unlockedBalance[to] остаётся без изменений
         
         emit Transfer(from, to, amount);

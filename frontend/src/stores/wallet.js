@@ -67,6 +67,8 @@ export const useWalletStore = defineStore('wallet', () => {
     console.log('[Wallet Store] connect() called')
     isConnected.value = true
     console.log('[Wallet Store] isConnected.value after connect:', isConnected.value)
+    // Очищаем старые балансы при подключении, чтобы получить актуальные из контракта
+    clearBalances()
     saveToStorage()
   }
 

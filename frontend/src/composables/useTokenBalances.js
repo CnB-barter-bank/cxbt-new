@@ -425,7 +425,9 @@ export function useTokenBalances(address) {
 
       // Обновляем реактивные значения с проверкой на undefined
       paidBalance.value = paid
-      workBalance.value = work
+      // Используем баланс из Diamond контракта, так как он является источником истины
+      // getUnlockedBalance может возвращать устаревшее значение
+      workBalance.value = diamondBalances?.unlocked !== undefined ? diamondBalances.unlocked : work
       // Проверяем, что diamondBalances.locked существует и не undefined
       lockedTokens.value = diamondBalances?.locked !== undefined ? diamondBalances.locked : null
       paidTokenName.value = paidMetadata.name
@@ -523,6 +525,7 @@ export function useTokenBalances(address) {
     criticalError,
     fetchBalances,
     isConfigured,
-    isFetching
+    isFetching,
+    clearCachedBalances
   }
 }

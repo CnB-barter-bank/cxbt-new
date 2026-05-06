@@ -289,7 +289,8 @@ const {
   isLoading: balancesLoading,
   error: balancesError,
   criticalError,
-  fetchBalances
+  fetchBalances,
+  clearCachedBalances
 } = useTokenBalances(() => wallet.address)
 
 // Используем composable для разблокировки токенов
@@ -431,6 +432,9 @@ const handleUnlock = async () => {
     // Сбрасываем значения
     unlockAmount.value = 0
     unlockCost.value = 0n
+    
+    // Очищаем кэш перед обновлением балансов
+    clearCachedBalances(wallet.address)
     
     // Обновляем балансы принудительно (игнорируя кэш)
     await fetchBalances(true)
@@ -604,6 +608,10 @@ const handleTransfer = async () => {
     transferSuccess.value = true
     transferForm.value.recipientAddress = ''
     transferForm.value.amount = ''
+    
+    // Очищаем кэш перед обновлением балансов
+    clearCachedBalances(wallet.address)
+    
     // Обновить балансы принудительно (игнорируя кэш)
     await fetchBalances(true)
   } catch (error) {

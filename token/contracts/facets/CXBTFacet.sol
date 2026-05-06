@@ -126,6 +126,13 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         ERC20Storage storage s = erc20Ds();
         total = s._balances[user];
         unlocked = s._unlockedBalance[user];
+        
+        // Автоматически исправляем некорректное состояние (если unlocked > total)
+        // Это предотвращает underflow и возвращает корректные значения
+        if (unlocked > total) {
+            unlocked = total;
+        }
+        
         locked = total - unlocked;
     }
 
@@ -210,7 +217,7 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
      * @dev Добавляет токены в пул наград
      * @param amount Количество токенов для добавления в пул
      * @notice Только владелец контракта может вызывать эту функцию
-     * @notice Списывает разблокированные CXBT токены у владельца и добавляет их в пул наград
+     * @notice Списывает заблокированные CXBT токены у владельца и добавляет их в пул наград
      */
     function addToRewardPool(uint256 amount) external override onlyOwner nonReentrant {
         require(amount > 0, "Amount must be greater than 0");
@@ -218,8 +225,21 @@ contract CXBTFacet is ICXBTFacet, ReentrancyGuard {
         ERC20Storage storage erc20S = erc20Ds();
         CXBTStorage storage cxbtS = ds();
         
+        // Проверяем, что у владельца достаточно токенов
+        uint256 totalBalance = erc20S._balances[msg.sender];
+        require(totalBalance >= amount, "Insufficient balance for reward pool");
         
+        uint256 unlockedBalance = erc20S._unlockedBalance[msg.sender];
+        
+        // Списываем токены из общего баланса
         erc20S._balances[msg.sender] -= amount;
+        
+        // Списываем сначала из unlockedBalance, затем из общего (locked)
+        // Это сохраняет инвариант: _unlockedBalance <= _balances
+        if (unlockedBalance > 0) {
+            uint256 deductFromUnlocked = unlockedBalance < amount ? unlockedBalance : amount;
+            erc20S._unlockedBalance[msg.sender] = unlockedBalance - deductFromUnlocked;
+        }
         
         // Добавляем в пул наград (хранится как PAID эквивалент)
         cxbtS.rewardPoolBalance += amount;

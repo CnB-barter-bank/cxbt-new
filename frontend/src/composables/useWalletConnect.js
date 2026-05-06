@@ -476,8 +476,15 @@ export function useWalletConnect() {
   // Слушатели событий для синхронизации с wallet store
   watch(
     address,
-    newAddress => {
-      console.log('[useWalletConnect] watch address triggered - old:', address.value, 'new:', newAddress)
+    (newAddress, oldAddress) => {
+      console.log('[useWalletConnect] watch address triggered - old:', oldAddress, 'new:', newAddress)
+      
+      // Если адрес изменился (не undefined), очищаем старые балансы
+      if (oldAddress && newAddress && oldAddress !== newAddress) {
+        console.log('[useWalletConnect] Адрес кошелька изменился, очищаем старые балансы')
+        walletStore.clearBalances()
+      }
+      
       walletStore.setAddress(newAddress)
     },
     { immediate: true }
