@@ -53,6 +53,7 @@ export default {
     notConnected: 'Кошелёк не подключён',
     connectPrompt: 'Подключите кошелёк для просмотра балансов токенов {paidToken} и {workToken}',
     connectTooltip: 'Нажмите для подключения кошелька',
+    addTokenToWallet: 'Добавить токен в кошелек',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: 'Неверный формат адреса',
     transferCancelled: 'Транзакция отменена пользователем',
     transferError: 'Ошибка при переводе',
+  },
+
+  addToken: {
+    addressNotConfigured: 'Адрес токена не настроен. Проверьте переменную VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: 'Пожалуйста, подключите кошелёк для добавления токена',
+    methodNotSupported: 'Ваш кошелёк не поддерживает добавление токенов',
+    success: 'Токен успешно добавлен',
+    cancelled: 'Добавление токена отменено',
+    error: 'Не удалось добавить токен',
+    rejected: 'Вы отклонили добавление токена',
+    rpcError: 'Внутренняя ошибка кошелька. Пожалуйста, попробуйте снова',
   },
   
   tokens: {

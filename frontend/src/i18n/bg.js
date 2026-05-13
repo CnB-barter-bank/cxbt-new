@@ -53,6 +53,7 @@ export default {
     notConnected: 'Кошчето не е свързано',
     connectPrompt: 'Свържете вашето кошче за да видите баланса на токените {paidToken} и {workToken}',
     connectTooltip: 'Натиснете за свързване на кошчето',
+    addTokenToWallet: 'Добави токен към портфейла',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: 'Невалиден формат на адреса',
     transferCancelled: 'Транзакцията е отменена от потребителя',
     transferError: 'Грешка при прехвърляне',
+  },
+
+  addToken: {
+    addressNotConfigured: 'Адресът на токена не е конфигуриран. Моля, проверете VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: 'Моля, свържете вашето портфейл за да добавите токена',
+    methodNotSupported: 'Вашето портфейл не поддържа добавяне на токени',
+    success: 'Токенът е успешно добавен',
+    cancelled: 'Добавянето на токена е отменено',
+    error: 'Неуспешно добавяне на токен',
+    rejected: 'Вие отхвърлихте добавянето на токена',
+    rpcError: 'Вътрешна грешка в портфейла. Моля, опитайте отново',
   },
   
   tokens: {

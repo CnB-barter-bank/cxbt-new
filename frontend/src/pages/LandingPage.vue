@@ -16,6 +16,18 @@
         <p>This is an Automated system and process for centralized completion and settlement of barter deals and transactions, for rapid achievement and fair valuation of barter exchange of goods and services;
 real-time electronic transition.</p>
       </div>
+      
+      <!-- Кнопка добавления токена в кошелек -->
+      <div class="row justify-center q-mb-md">
+        <q-btn
+          color="primary"
+          :label="i18nStore.t('wallet.addTokenToWallet')"
+          @click="addTokenToWallet"
+          icon="add_circle"
+          size="md"
+        />
+      </div>
+      
       <!-- Секция балансов токенов (показывается только при подключенном кошельке и закрытом диалоге) -->
       <div v-if="wallet.isConnected && !isWalletDialogOpen" class="balances-section">
         <div class="row items-center justify-between q-mb-md">
@@ -262,6 +274,7 @@ import { useWalletConnect } from '../composables/useWalletConnect'
 import { useTokenBalances } from '../composables/useTokenBalances'
 import { useTokenUnlock } from '../composables/useTokenUnlock'
 import { useTokenTransfer } from '../composables/useTokenTransfer'
+import { useAddToken } from '../composables/useAddToken'
 import { Notify, debounce } from 'quasar'
 import { parseUnits } from 'viem'
 import ErrorPopup from '../components/ErrorPopup.vue'
@@ -304,6 +317,9 @@ const {
 
 // Используем composable для перевода токенов
 const { transferWorkTokens } = useTokenTransfer()
+
+// Используем composable для добавления токена в кошелек
+const { addTokenToWallet } = useAddToken()
 
 // Реактивные переменные для разблокировки
 const unlockAmount = ref(0)

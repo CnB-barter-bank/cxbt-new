@@ -53,6 +53,7 @@ export default {
     notConnected: 'Wallet not connected',
     connectPrompt: 'Connect your wallet to view your {paidToken} and {workToken} token balances',
     connectTooltip: 'Click to connect wallet',
+    addTokenToWallet: 'Add Token to Wallet',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: 'Invalid address format',
     transferCancelled: 'Transaction cancelled by user',
     transferError: 'Error during transfer',
+  },
+
+  addToken: {
+    addressNotConfigured: 'Token address is not configured. Please check VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: 'Please connect your wallet to add the token',
+    methodNotSupported: 'Your wallet does not support adding tokens',
+    success: 'Token added successfully',
+    cancelled: 'Token addition cancelled',
+    error: 'Failed to add token',
+    rejected: 'You rejected the token addition',
+    rpcError: 'Internal wallet error. Please try again',
   },
   
   tokens: {

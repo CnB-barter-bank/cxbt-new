@@ -53,6 +53,7 @@ export default {
     notConnected: '钱包未连接',
     connectPrompt: '连接您的钱包以查看{paidToken}和{workToken}代币余额',
     connectTooltip: '点击连接钱包',
+    addTokenToWallet: '将代币添加到钱包',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: '地址格式无效',
     transferCancelled: '用户取消了交易',
     transferError: '转账时出错',
+  },
+
+  addToken: {
+    addressNotConfigured: '代币地址未配置。请检查 VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: '请连接您的钱包以添加代币',
+    methodNotSupported: '您的钱包不支持添加代币',
+    success: '代币添加成功',
+    cancelled: '添加代币已取消',
+    error: '添加代币失败',
+    rejected: '您拒绝了添加代币',
+    rpcError: '钱包内部错误。请重试',
   },
   
   tokens: {

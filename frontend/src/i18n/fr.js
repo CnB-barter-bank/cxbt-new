@@ -53,6 +53,7 @@ export default {
     notConnected: 'Portefeuille non connecté',
     connectPrompt: 'Connectez votre portefeuille pour voir vos soldes de jetons {paidToken} et {workToken}',
     connectTooltip: 'Cliquez pour connecter le portefeuille',
+    addTokenToWallet: 'Ajouter le token au portefeuille',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: 'Format d\'adresse invalide',
     transferCancelled: 'Transaction annulée par l\'utilisateur',
     transferError: 'Erreur lors du transfert',
+  },
+
+  addToken: {
+    addressNotConfigured: 'L\'adresse du token n\'est pas configurée. Veuillez vérifier VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: 'Veuillez connecter votre portefeuille pour ajouter le token',
+    methodNotSupported: 'Votre portefeuille ne prend pas en charge l\'ajout de tokens',
+    success: 'Token ajouté avec succès',
+    cancelled: 'Ajout du token annulé',
+    error: 'Échec de l\'ajout du token',
+    rejected: 'Vous avez refusé l\'ajout du token',
+    rpcError: 'Erreur interne du portefeuille. Veuillez réessayer',
   },
   
   tokens: {

@@ -53,6 +53,7 @@ export default {
     notConnected: 'Wallet nicht verbunden',
     connectPrompt: 'Verbinden Sie Ihre Wallet, um Ihre {paidToken}- und {workToken}-Token-Bilanz anzuzeigen',
     connectTooltip: 'Klicken, um Wallet zu verbinden',
+    addTokenToWallet: 'Token zum Wallet hinzufügen',
   },
   
   notify: {
@@ -68,6 +69,17 @@ export default {
     invalidAddress: 'Ungültiges Adressformat',
     transferCancelled: 'Transaktion vom Benutzer abgebrochen',
     transferError: 'Fehler bei der Übertragung',
+  },
+
+  addToken: {
+    addressNotConfigured: 'Token-Adresse ist nicht konfiguriert. Bitte überprüfen Sie VITE_WORK_TOKEN_ADDRESS',
+    walletNotConnected: 'Bitte verbinden Sie Ihre Wallet, um den Token hinzuzufügen',
+    methodNotSupported: 'Ihre Wallet unterstützt das Hinzufügen von Tokens nicht',
+    success: 'Token erfolgreich hinzugefügt',
+    cancelled: 'Token-Hinzufügen abgebrochen',
+    error: 'Token konnte nicht hinzugefügt werden',
+    rejected: 'Sie haben das Hinzufügen des Tokens abgelehnt',
+    rpcError: 'Interner Wallet-Fehler. Bitte versuchen Sie es erneut',
   },
   
   tokens: {
