@@ -79,7 +79,8 @@ export function useAddToken() {
         // Получаем connector client для доступа к провайдеру
         try {
           const { getConnectorClient } = await import('@wagmi/core')
-          const { wagmiConfig } = await import('./useWalletConnect')
+          const useWalletConnectModule = await import('./useWalletConnect')
+          const { wagmiConfig } = useWalletConnectModule
           
           const connectorClient = await getConnectorClient(wagmiConfig)
           if (connectorClient?.wallet?.request) {
