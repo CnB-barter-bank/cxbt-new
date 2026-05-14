@@ -1,4 +1,4 @@
-import { useI18n } from 'vue-i18n'
+import { useI18nStore } from 'src/stores/i18n'
 import { useWalletStore } from 'src/stores/wallet'
 import { Notify } from 'quasar'
 import { wagmiConfig } from './useWalletConnect'
@@ -11,7 +11,7 @@ import { wagmiConfig } from './useWalletConnect'
 export function useAddToken() {
   console.log('[useAddToken] Инициализация composable')
 
-  const { t } = useI18n()
+  const i18nStore = useI18nStore()
   const walletStore = useWalletStore()
 
   /**
@@ -43,7 +43,7 @@ export function useAddToken() {
 
       // Проверяем, что адрес токена указан
       if (!tokenAddress) {
-        const errorMsg = t('addToken.addressNotConfigured')
+        const errorMsg = i18nStore.t('addToken.addressNotConfigured')
         console.error('[useAddToken]', errorMsg)
         Notify.create({
           type: 'negative',
@@ -56,7 +56,7 @@ export function useAddToken() {
 
       // Проверяем, что кошелёк подключён
       if (!walletStore.isConnected) {
-        const errorMsg = t('addToken.walletNotConnected')
+        const errorMsg = i18nStore.t('addToken.walletNotConnected')
         console.error('[useAddToken]', errorMsg)
         Notify.create({
           type: 'negative',
@@ -96,7 +96,7 @@ export function useAddToken() {
 
       // Проверяем поддержку метода wallet_watchAsset
       if (!provider?.request) {
-        const errorMsg = t('addToken.methodNotSupported')
+        const errorMsg = i18nStore.t('addToken.methodNotSupported')
         console.error('[useAddToken]', errorMsg)
         Notify.create({
           type: 'negative',
@@ -128,7 +128,7 @@ export function useAddToken() {
       if (wasAdded) {
         Notify.create({
           type: 'positive',
-          message: t('addToken.success'),
+          message: i18nStore.t('addToken.success'),
           position: 'top',
           timeout: 3000,
         })
@@ -136,7 +136,7 @@ export function useAddToken() {
       } else {
         Notify.create({
           type: 'info',
-          message: t('addToken.cancelled'),
+          message: i18nStore.t('addToken.cancelled'),
           position: 'top',
           timeout: 3000,
         })
@@ -147,17 +147,17 @@ export function useAddToken() {
       console.error('[useAddToken] Stack trace:', error.stack)
 
       // Обрабатываем специфические ошибки
-      let errorMessage = t('addToken.error')
+      let errorMessage = i18nStore.t('addToken.error')
 
       if (error.code === 4001 || error.message?.includes('User rejected')) {
         // Пользователь отклонил запрос
-        errorMessage = t('addToken.rejected')
+        errorMessage = i18nStore.t('addToken.rejected')
       } else if (error.code === -32603 || error.message?.includes('Internal JSON-RPC error')) {
         // Внутренняя ошибка JSON-RPC
-        errorMessage = t('addToken.rpcError')
+        errorMessage = i18nStore.t('addToken.rpcError')
       } else if (error.message) {
         // Другие ошибки с сообщением
-        errorMessage = `${t('addToken.error')}: ${error.message}`
+        errorMessage = `${i18nStore.t('addToken.error')}: ${error.message}`
       }
 
       Notify.create({
