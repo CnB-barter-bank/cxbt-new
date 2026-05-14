@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 import { useWalletStore } from 'src/stores/wallet'
 import { Notify } from 'quasar'
+import { wagmiConfig } from './useWalletConnect'
 
 /**
  * Composable для добавления токена в кошелёк пользователя
@@ -79,10 +80,11 @@ export function useAddToken() {
         // Получаем connector client для доступа к провайдеру
         try {
           const { getConnectorClient } = await import('@wagmi/core')
-          const useWalletConnectModule = await import('./useWalletConnect')
-          const { wagmiConfig } = useWalletConnectModule
           
-          const connectorClient = await getConnectorClient(wagmiConfig)
+          // getConnectorClient требует параметр account в wagmi v3.x
+          const connectorClient = await getConnectorClient(wagmiConfig, {
+            account: walletStore.address
+          })
           if (connectorClient?.wallet?.request) {
             provider = connectorClient.wallet
             console.log('[useAddToken] Используется провайдер WalletConnect')

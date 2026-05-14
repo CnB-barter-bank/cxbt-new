@@ -1,1 +1,0 @@
-import{a as e,c as t,i as n,n as r,o as i,r as a,s as o,t as s}from"./useWalletConnect-Cv6a2cMJ.js";export{s as BASE_CHAIN_ID,r as BASE_NETWORK_CONFIG,i as default,i as useWalletConnect,a as getWeb3Modal,n as initializeWeb3Modal,e as queryClient,o as wagmiConfig,t as web3Modal};
