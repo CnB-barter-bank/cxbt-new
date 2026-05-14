@@ -1,0 +1,1 @@
+import{a as e}from"./useWalletConnect-DxsVQcuU.js";export{e as wagmiConfig};
