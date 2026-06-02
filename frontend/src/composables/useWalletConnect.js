@@ -55,6 +55,90 @@ export const queryClient = new QueryClient()
 let web3Modal
 let isWeb3ModalInitialized = false
 
+// Функция внедрения стилей мобильной версии в shadowRoot <w3m-modal>.
+// Web3Modal v5 использует Shadow DOM: внешний CSS не проникает внутрь.
+// Проблема: на мобильных (≤430px) модалка крепится к низу (align-items: flex-end),
+// но wui-card имеет :host { overflow: hidden } в своём СОБСТВЕННОМ shadow DOM
+// и не имеет max-height — если контент выше viewport, нижняя часть обрезается.
+// Внешний CSS из w3m-modal shadow root НЕ может переопределить :host { overflow: hidden }
+// внутри wui-card shadow DOM.
+// Решение: внедрить стиль в shadowRoot w3m-modal (для max-height, display:flex)
+// И в shadowRoot каждого wui-card (чтобы сменить overflow: hidden → overflow-y: auto).
+const W3M_MOBILE_STYLE_ID = 'cxbt-w3m-mobile-fix'
+const W3M_CARD_STYLE_ID = 'cxbt-w3m-card-fix'
+
+const MOBILE_CSS_W3M = `
+  @media (max-width: 430px) {
+    wui-card {
+      max-width: 100% !important;
+      max-height: 90vh !important;
+      min-height: auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      border-bottom-left-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
+    w3m-router {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  @media (max-width: 430px) and (max-height: 500px) {
+    wui-card {
+      max-height: 95vh !important;
+    }
+  }
+`
+
+// Стиль для внедрения ВНУТРЬ shadowRoot wui-card — Override :host { overflow: hidden }
+const MOBILE_CSS_CARD = `
+  @media (max-width: 430px) {
+    :host {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      max-height: 90vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+  }
+  @media (max-width: 430px) and (max-height: 500px) {
+    :host {
+      max-height: 95vh !important;
+    }
+  }
+`
+
+const injectMobileStyles = () => {
+  if (typeof document === 'undefined') return
+
+  const modalEl = document.querySelector('w3m-modal')
+  if (!modalEl || !modalEl.shadowRoot) return
+
+  // 1. Внедряем стили в shadowRoot w3m-modal (для wui-card, w3m-router)
+  if (!modalEl.shadowRoot.getElementById(W3M_MOBILE_STYLE_ID)) {
+    const style = document.createElement('style')
+    style.id = W3M_MOBILE_STYLE_ID
+    style.textContent = MOBILE_CSS_W3M
+    modalEl.shadowRoot.appendChild(style)
+  }
+
+  // 2. Внедряем стили ВНУТРЬ shadowRoot wui-card — Override :host { overflow: hidden }
+  //    Внешний CSS из w3m-modal shadow root НЕ может переопределить :host внутри
+  //    чужого shadow DOM. Поэтому инжектим прямо в wui-card.shadowRoot.
+  const cardEl = modalEl.shadowRoot.querySelector('wui-card')
+  if (cardEl && cardEl.shadowRoot && !cardEl.shadowRoot.getElementById(W3M_CARD_STYLE_ID)) {
+    const cardStyle = document.createElement('style')
+    cardStyle.id = W3M_CARD_STYLE_ID
+    cardStyle.textContent = MOBILE_CSS_CARD
+    cardEl.shadowRoot.appendChild(cardStyle)
+    console.log('[Web3Modal] Стиль overflow-y:auto внедрён в shadowRoot wui-card')
+  }
+
+  console.log('[Web3Modal] Мобильные стили внедрены')
+}
+
 // Функция ленивой инициализации Web3Modal
 const initializeWeb3Modal = () => {
   if (isWeb3ModalInitialized) {
@@ -95,11 +179,18 @@ const initializeWeb3Modal = () => {
       themeVariables: {
         '--w3m-color-mix': '#00DCFF',
         '--w3m-color-mix-strength': 40,
+        '--w3m-z-index': 99999,
       },
     })
     
     isWeb3ModalInitialized = true
     console.log('[Web3Modal] Инициализация успешна')
+
+    // Внедряем стили для мобильной версии после инициализации Web3Modal.
+    // Элемент <w3m-modal> создаётся в DOM при первом открытии, поэтому
+    // пробуем внедрить сразу (если уже есть) и дополнительно — при каждом
+    // вызове open().
+    injectMobileStyles()
   } catch (error) {
     console.error('[Web3Modal] Ошибка при инициализации:', error)
     console.error('[Web3Modal] Stack trace:', error.stack)
@@ -561,6 +652,9 @@ export function useWalletConnect() {
       setHasAutoOpened(true) // Сохраняем в localStorage
       try {
         await open()
+        // Внедряем стили сразу после открытия: <w3m-modal> создаётся в DOM
+        // при первом вызове open(), поэтому стили могут быть добавлены только сейчас.
+        injectMobileStyles()
         console.log('[WalletConnect] Модальное окно автоматически открыто')
       } catch (error) {
         console.error('[WalletConnect] Ошибка при автоматическом открытии:', error)
@@ -581,6 +675,8 @@ export function useWalletConnect() {
       isConnecting.value = true
       isWalletDialogOpen.value = true
       await open()
+      // Внедряем мобильные стили после открытия модалки
+      injectMobileStyles()
       
       // Проверяем и переключаем на Base после подключения
       if (isConnected.value) {
