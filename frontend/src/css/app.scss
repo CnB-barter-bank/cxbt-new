@@ -1,0 +1,30 @@
+// app global css in SCSS form
+
+// Web3Modal v5 uses Shadow DOM, so external CSS selectors cannot reach
+// internal elements. Only the host element (<w3m-modal>) and its ::part()
+// pseudo-elements can be styled from outside.
+//
+// Mobile fix: Web3Modal v5 anchors the modal card to the bottom of the
+// viewport on screens <= 430px (align-items: flex-end) but does not set a
+// max-height on the card. When the wallet list is taller than the viewport,
+// the top of the card (with wallets) gets clipped above the viewport and
+// the user only sees the bottom of the card.
+//
+// The actual fix is implemented in useWalletConnect.js by injecting a
+// <style> tag into the <w3m-modal> shadowRoot that gives the card a
+// max-height and makes it scrollable on mobile.
+//
+// This file only handles the host element positioning and z-index.
+
+w3m-modal {
+  z-index: 99999 !important;
+}
+
+// Ensure the page body doesn't scroll while the modal is open
+// (Web3Modal already adds this via inline styles, but we reinforce it
+// for Quasar's layout containers which may override body overflow).
+body {
+  &:has(w3m-modal.open) {
+    overflow: hidden;
+  }
+}

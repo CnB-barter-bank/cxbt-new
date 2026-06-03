@@ -1,0 +1,41 @@
+{
+  "name": "cxbt-hardhat-project",
+  "version": "1.0.0",
+  "description": "Hardhat project for CXBT smart contracts",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.js",
+    "deploy:base": "hardhat run scripts/deploy.js --network base",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network baseSepolia",
+    "verify": "hardhat run scripts/verify.js",
+    "verify:base": "hardhat run scripts/verify.js --network base",
+    "verify:sepolia": "hardhat run scripts/verify.js --network baseSepolia",
+    "upgrade": "hardhat run scripts/upgrade.js",
+    "upgrade:base": "hardhat run scripts/upgrade.js --network base",
+    "upgrade:sepolia": "hardhat run scripts/upgrade.js --network baseSepolia",
+    "check": "hardhat run scripts/checkAndFixWhitelist.js",
+    "check:base": "hardhat run scripts/checkAndFixWhitelist.js --network base",
+    "check:sepolia": "hardhat run scripts/checkAndFixWhitelist.js --network baseSepolia"
+  },
+  "keywords": [
+    "hardhat",
+    "ethereum",
+    "smart-contracts"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0",
+    "solidity-coverage": "^0.8.17"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.4.0",
+    "ethers": "^6.12.0"
+  }
+}

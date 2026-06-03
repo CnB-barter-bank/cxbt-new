@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint:fix, format:check and test:unit for frontend
+cd frontend && npm run lint:fix && npm run format:check && npm run test:unit
