@@ -56,7 +56,7 @@ function throttle(fn, interval) {
     });
   };
 }
-const throttledReadContract = throttle(readContract, 200)
+const throttledReadContract = throttle(readContract, 500)
 
 // ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
