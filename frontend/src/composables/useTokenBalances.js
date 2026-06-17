@@ -39,7 +39,10 @@ function throttle(fn, interval) {
     }
     const { args, resolve, reject } = queue.shift();
     Promise.resolve()
-      .then(() => fn(...args))
+      .then(() => {
+        console.log('throttle', fn, Date.now())
+        return fn(...args)
+        })
       .then(resolve)
       .catch(reject)
       .finally(() => {
@@ -56,7 +59,7 @@ function throttle(fn, interval) {
     });
   };
 }
-const throttledReadContract = throttle(readContract, 500)
+const throttledReadContract = throttle(readContract, 1000)
 
 // ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
