@@ -9,11 +9,22 @@ import { safeLogError, safeLogObject } from '../utils/serializer'
  * @param {number} delay - Задержка в миллисекундах
  * @returns {Function} Debounced функция
  */
-function debounce(fn, delay) {
-  let timeoutId
-  return function (...args) {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn.apply(this, args), delay)
+function debounce( callback, delay ) {
+  let timer;
+
+  return( ...args ) => {
+    return new Promise( ( resolve, reject ) => {
+      clearTimeout(timer);
+      timer = setTimeout( () => {
+          try {
+            let output = callback(...args);
+            resolve( output );
+          } catch ( err ) {
+            reject( err );
+          }
+      }, delay );
+    })
+
   }
 }
 
