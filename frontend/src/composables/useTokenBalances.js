@@ -28,7 +28,35 @@ function debounce( callback, delay ) {
   }
 }
 
-const debouncedReadContract = debounce(readContract, 200)
+function throttle(fn, interval) {
+  const queue = [];
+  let timer = null;
+
+  function processNext() {
+    if (queue.length === 0) {
+      timer = null;
+      return;
+    }
+    const { args, resolve, reject } = queue.shift();
+    Promise.resolve()
+      .then(() => fn(...args))
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        timer = setTimeout(processNext, interval);
+      });
+  }
+
+  return function (...args) {
+    return new Promise((resolve, reject) => {
+      queue.push({ args, resolve, reject });
+      if (timer === null) {
+        processNext();
+      }
+    });
+  };
+}
+const throttledReadContract = throttle(readContract, 200)
 
 // ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
@@ -191,7 +219,7 @@ export function useTokenBalances(address) {
   // Функция для получения баланса ERC20 токена
   const getERC20Balance = async (tokenAddress, userAddress) => {
     try {
-      const balance = await debouncedReadContract(wagmiConfig, {
+      const balance = await throttledReadContract(wagmiConfig, {
         address: tokenAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -208,7 +236,7 @@ export function useTokenBalances(address) {
   // Функция для получения разблокированного баланса ERC20 токена (unlockedBalanceOf)
   const getUnlockedBalance = async (tokenAddress, userAddress) => {
     try {
-      const balance = await debouncedReadContract(wagmiConfig, {
+      const balance = await throttledReadContract(wagmiConfig, {
         address: tokenAddress,
         abi: erc20Abi,
         functionName: 'unlockedBalanceOf',
@@ -225,7 +253,7 @@ export function useTokenBalances(address) {
   // Функция для получения адреса PAID токена из Diamond контракта
   const getPaidTokenAddress = async () => {
     try {
-      const address = await debouncedReadContract(wagmiConfig, {
+      const address = await throttledReadContract(wagmiConfig, {
         address: workTokenAddress,
         abi: cxbtAbi,
         functionName: 'getPaidToken'
@@ -244,7 +272,7 @@ export function useTokenBalances(address) {
       console.log('  - workTokenAddress:', workTokenAddress)
       console.log('  - userAddress:', userAddress)
       
-      const balances = await debouncedReadContract(wagmiConfig, {
+      const balances = await throttledReadContract(wagmiConfig, {
         address: workTokenAddress,
         abi: diamondAbi,
         functionName: 'getTokenBalances',
@@ -289,17 +317,17 @@ export function useTokenBalances(address) {
     try {
       console.log(`[useTokenBalances] fetchTokenMetadata вызван для адреса:`, tokenAddress)
       const [name, symbol, decimals] = await Promise.all([
-        debouncedReadContract(wagmiConfig, {
+        throttledReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'name'
         }),
-        debouncedReadContract(wagmiConfig, {
+        throttledReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'symbol'
         }),
-        debouncedReadContract(wagmiConfig, {
+        throttledReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'decimals'
