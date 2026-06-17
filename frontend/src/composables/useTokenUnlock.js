@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
-import { readContract, writeContract, simulateContract } from '@wagmi/core'
+import {  writeContract, simulateContract } from '@wagmi/core'
+import {readContract}  from '../utils/readContract'
 import { wagmiConfig } from './useWalletConnect'
 import { Notify } from 'quasar'
 import { safeLogError } from '../utils/serializer'
