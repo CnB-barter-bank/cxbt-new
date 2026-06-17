@@ -15,9 +15,9 @@ function debounce( callback, delay ) {
   return( ...args ) => {
     return new Promise( ( resolve, reject ) => {
       clearTimeout(timer);
-      timer = setTimeout( () => {
+      timer = setTimeout( async () => {
           try {
-            let output = callback(...args);
+            let output = await callback(...args);
             resolve( output );
           } catch ( err ) {
             reject( err );
