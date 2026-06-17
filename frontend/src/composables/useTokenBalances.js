@@ -197,6 +197,7 @@ export function useTokenBalances(address) {
         functionName: 'balanceOf',
         args: [userAddress]
       })
+      console.log('[useTokenBalances] getERC20Balance:', balance)
       return balance
     } catch (err) {
       console.error(`[useTokenBalances] Ошибка получения баланса токена ${tokenAddress}:`, safeLogError(err))
@@ -213,6 +214,7 @@ export function useTokenBalances(address) {
         functionName: 'unlockedBalanceOf',
         args: [userAddress]
       })
+      console.log('[useTokenBalances] getUnlockedBalance:', balance)
       return balance
     } catch (err) {
       console.error(`[useTokenBalances] Ошибка получения разблокированного баланса токена ${tokenAddress}:`, safeLogError(err))
