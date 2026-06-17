@@ -17,6 +17,8 @@ function debounce(fn, delay) {
   }
 }
 
+const debouncedReadContract = debounce(readContract, 200)
+
 // ABI для ERC20 токена (функции name, symbol, balanceOf, unlockedBalanceOf, decimals)
 const erc20Abi = [
   {
@@ -178,7 +180,7 @@ export function useTokenBalances(address) {
   // Функция для получения баланса ERC20 токена
   const getERC20Balance = async (tokenAddress, userAddress) => {
     try {
-      const balance = await readContract(wagmiConfig, {
+      const balance = await debouncedReadContract(wagmiConfig, {
         address: tokenAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -194,7 +196,7 @@ export function useTokenBalances(address) {
   // Функция для получения разблокированного баланса ERC20 токена (unlockedBalanceOf)
   const getUnlockedBalance = async (tokenAddress, userAddress) => {
     try {
-      const balance = await readContract(wagmiConfig, {
+      const balance = await debouncedReadContract(wagmiConfig, {
         address: tokenAddress,
         abi: erc20Abi,
         functionName: 'unlockedBalanceOf',
@@ -210,7 +212,7 @@ export function useTokenBalances(address) {
   // Функция для получения адреса PAID токена из Diamond контракта
   const getPaidTokenAddress = async () => {
     try {
-      const address = await readContract(wagmiConfig, {
+      const address = await debouncedReadContract(wagmiConfig, {
         address: workTokenAddress,
         abi: cxbtAbi,
         functionName: 'getPaidToken'
@@ -229,7 +231,7 @@ export function useTokenBalances(address) {
       console.log('  - workTokenAddress:', workTokenAddress)
       console.log('  - userAddress:', userAddress)
       
-      const balances = await readContract(wagmiConfig, {
+      const balances = await debouncedReadContract(wagmiConfig, {
         address: workTokenAddress,
         abi: diamondAbi,
         functionName: 'getTokenBalances',
@@ -274,17 +276,17 @@ export function useTokenBalances(address) {
     try {
       console.log(`[useTokenBalances] fetchTokenMetadata вызван для адреса:`, tokenAddress)
       const [name, symbol, decimals] = await Promise.all([
-        readContract(wagmiConfig, {
+        debouncedReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'name'
         }),
-        readContract(wagmiConfig, {
+        debouncedReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'symbol'
         }),
-        readContract(wagmiConfig, {
+        debouncedReadContract(wagmiConfig, {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: 'decimals'
